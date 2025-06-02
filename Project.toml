@@ -1,22 +1,28 @@
 name = "EbmCommon"
 uuid = "f104a7c3-3688-4e7c-9c13-313faccad043"
 authors = ["Hung Nguyen Duc <ndgnuh@protonmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 MakieCore = "20f20a25-4f0e-4fdf-b5d1-57303727442b"
 OrdinaryDiffEqTsit5 = "b1df2697-797e-41e3-8120-5422d3b24e4a"
+Oxygen = "df9a0d86-3283-4920-82dc-4555fc0d1d8b"
 RequiredInterfaces = "97f35ef4-7bc5-4ec1-a41a-dcc69c7308c6"
+StructTypes = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
 Chain = "0.6.0"
 DocStringExtensions = "0.9.4"
+HTTP = "1.10.16"
 Makie = "0.22.7"
 MakieCore = "0.9.3"
 OrdinaryDiffEqTsit5 = "1.1.0"
+Oxygen = "1.7.1"
 RequiredInterfaces = "0.1.7"
+StructTypes = "1.11.0"
 UnPack = "1.0.2"

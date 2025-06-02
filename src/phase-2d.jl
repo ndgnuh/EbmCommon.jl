@@ -55,7 +55,7 @@ function run_phase_portrait_2d(
         u0_ = copy(u0)
         u0_[xind] = x
         u0_[yind] = y
-        simulate(params, u0_, tspan; solver_options...)
+        _simulate(params, u0_, tspan; solver_options...)
     end
 
     return PhaseData2d(;

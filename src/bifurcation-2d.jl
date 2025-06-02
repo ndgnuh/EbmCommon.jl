@@ -50,6 +50,25 @@ function encode_stability(
     return flag
 end
 
+function stability_flagname(se::StabilityEncoder{T}, flag::T) where {T<:Unsigned}
+    baseflag = one(flag)
+    n = se.num_equilibria
+    stabily_names = String[]
+    sizehint!(stabily_names, n)
+    for k in 1:n
+        if (flag & baseflag) != 0
+            push!(stabily_names, "E_$k")
+        end
+        baseflag = baseflag << 1
+    end
+    name = join(stabily_names, ", ")
+    if isempty(name)
+        return L"\varnothing"
+    else
+        return Makie.LaTeXString(name)
+    end
+end
+
 """
 Decode stability array from flag and return a boolean vector.
 The total number of stability is required so that the vector's length is fixed.
@@ -82,7 +101,7 @@ end
 """
 Create data for 2d bifurcation diagram
 """
-function bifurcation_2d(
+function run_bifurcation_2d(
     base_params::AbstractEbmParams,
     update_x::Pair,
     update_y::Pair;

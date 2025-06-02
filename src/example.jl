@@ -1,7 +1,8 @@
 module Examples
 
-import EbmCommon
+import ..EbmCommon
 import ..EbmCommon: AbstractEbmParams, EvolutionRule
+import ..EbmCommon: VariableSpecs, ParameterSpecs, ModelSpecs
 using UnPack: @unpack
 
 @kwdef struct PredatorPreyParams <: AbstractEbmParams
@@ -32,6 +33,60 @@ EbmCommon.EvolutionRule(::PredatorPreyParams) = predator_prey_rule!
 EbmCommon.ParamsUpdater(::PredatorPreyParams) = predator_prey_update
 EbmCommon.number_of_variables(::PredatorPreyParams) = 2
 EbmCommon.number_of_equilibria(::PredatorPreyParams) = 3
+
+
+const model_specifications = let
+    parameters = [
+        ParameterSpecs(
+            name=:α,
+            description="Intrinsic growth of preys",
+            alias=:alpha,
+            default=0.5,
+        ),
+        ParameterSpecs(
+            name=:β,
+            description="Predator hunting rate",
+            alias=:beta,
+            default=0.5,
+        ),
+        ParameterSpecs(
+            name=:δ,
+            description="Conversion rate from preys to predators",
+            alias=:delta,
+            default=0.5,
+        ),
+        ParameterSpecs(
+            name=:γ,
+            description="Natural death rate of predators",
+            alias=:gamma,
+            default=0.5,
+        ),
+        ParameterSpecs(
+            name=:K,
+            description="Carrying capacity",
+            default=5.0,
+        ),
+    ]
+
+    variables = [
+        VariableSpecs(
+            name=:x,
+            index=1,
+            description="Density of preys",
+            default=0.5,
+        ),
+        VariableSpecs(
+            name=:y,
+            index=2,
+            description="Density of predators",
+            default=0.5,
+        )
+    ]
+
+    ModelSpecs(; variables, parameters)
+end
+
+EbmCommon.get_model_specifications(::PredatorPreyParams) = model_specifications
 
 function EbmCommon.get_equilibria(params::PredatorPreyParams)
     @unpack α, β, γ, δ = params

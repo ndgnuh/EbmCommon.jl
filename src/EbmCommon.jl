@@ -10,8 +10,32 @@ using Chain: @chain
 using RequiredInterfaces
 using MakieCore
 using Makie
+using UnPack
+import Oxygen
 
 abstract type AbstractEbmParams end
+
+@kwdef struct VariableSpecs
+    name::Symbol
+    description::String
+    default::Float64
+    index::Int
+end
+
+@kwdef struct ParameterSpecs
+    name::Symbol
+    description::String
+    default::Float64
+    alias::Symbol = name
+end
+
+@kwdef struct ModelSpecs
+    variables::Vector{VariableSpecs}
+    parameters::Vector{ParameterSpecs}
+    time_axis_name::String = "Time"
+    state_axis_name::String = "Density"
+end
+
 
 """
 Receives a parameter set, returns a DifferentialEquations's ode.
@@ -63,6 +87,28 @@ function get_local_stabilities end
     number_of_equilibria(::AbstractEbmParams)
     get_equilibria(::AbstractEbmParams)
     get_local_stabilities(::AbstractEbmParams)
+    get_model_specifications(::AbstractEbmParams)
+end
+
+
+"""
+Return a map of information, indexed by parameters.
+"""
+function get_parameter_specifications(p::AbstractEbmParams)
+    model_specs = get_model_specifications(p)
+    Dict(map(model_specs.parameters) do p
+        p.name => p
+    end)
+end
+
+"""
+Return a map of variable information, indexed by index of variables.
+"""
+function get_variable_specifications(p::AbstractEbmParams)
+    model_specs = get_model_specifications(p)
+    Dict(map(enumerate(model_specs.variables)) do (i, p)
+        p.index => p
+    end)
 end
 
 const FloatType = Float64
@@ -70,9 +116,10 @@ const ParameterChange = Pair{Symbol,T} where {T<:AbstractArray}
 
 """
 Simulate the model, the parameters must have an evolution
-rule to be simulated.
+rule to be simulated. 
+Returns ODESolution (Unwrapped).
 """
-function simulate(
+function _simulate(
     params::AbstractEbmParams,
     u0::AbstractVector, tspan;
     solver_options...)
@@ -89,10 +136,12 @@ function Base.collect(p::AbstractEbmParams)
     return Dict(name => getproperty(p, name) for name in names)
 end
 
+include("simulate.jl")
 include("bifurcation-1d.jl")
 include("bifurcation-2d.jl")
 include("phase-2d.jl")
 include("recipes.jl")
+include("api-server.jl")
 include("example.jl")
 
 end # module EbmCommon

@@ -15,7 +15,7 @@ function run_bifurcation_1d(
     change::Pair;
     tspan=(0.0f0, 500.0f0),
     change_options=NamedTuple(),
-    solver_options=NamedTuple(:dtmax => 0.2),
+    solver_options=(dtmax=0.2,),
 )
     # Check for traits
     change_param = ParamsUpdater(base_params)
@@ -27,7 +27,7 @@ function run_bifurcation_1d(
             change_options...)
     end
     solutions::Vector{ODESolution} = map(params) do params_
-        simulate(params_, u0, tspan; solver_options...)
+        _simulate(params_, u0, tspan; solver_options...)
     end
 
     return BifurcationData1d(;
