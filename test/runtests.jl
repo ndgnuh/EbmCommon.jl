@@ -3,8 +3,8 @@ using EbmCommon.Examples
 using CairoMakie
 
 
-const params = Examples.PredatorPreyParams()
-show(collect(params))
+#= const params = Examples.PredatorPreyParams() =#
+#= show(collect(params)) =#
 
 #= let params = Examples.PredatorPreyParams() =#
 #=     u0 = [1, 1] =#
@@ -40,16 +40,20 @@ show(collect(params))
 #     save("test.pdf", fig)
 # end
 
-let params = Examples.PredatorPreyParams()
-    u0 = Float64[1, 1]
-    tspan = (0, 100.0)
-    data = EbmCommon.bifurcation_2d(
-        params,
-        :δ => range(0, 1, 900),
-        :β => range(0, 1, 450),
-    )
-    EbmCommon.set_makie_theme!()
-    fig = plot(data)
+#= let params = Examples.PredatorPreyParams() =#
+#=     u0 = Float64[1, 1] =#
+#=     tspan = (0, 100.0) =#
+#=     data = EbmCommon.bifurcation_2d( =#
+#=         params, =#
+#=         :δ => range(0, 1, 900), =#
+#=         :β => range(0, 1, 450), =#
+#=     ) =#
+#=     EbmCommon.set_makie_theme!() =#
+#=     fig = plot(data) =#
+#=  =#
+#=     save("test.pdf", fig) =#
+#= end =#
 
-    save("test.pdf", fig)
+let params = Examples.PredatorPreyParams()
+    EbmCommon.run_api(params)
 end
