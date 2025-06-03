@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:number_text_input_formatter/number_text_input_formatter.dart';
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 
+import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:io';
 import './model.dart';
@@ -102,15 +102,28 @@ class ExperimentEditor extends StatelessWidget {
   }
 }
 
-class RunButton extends Consumer<ExperimentState> {
-  RunButton({super.key})
-    : super(
-        builder: (context, state, _) => FilledButton.icon(
-          onPressed: state.run,
+class RunButton extends StatelessWidget {
+  const RunButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ExperimentState.of(context);
+    return FutureBuilder(
+      future: state.resultImageFuture,
+      builder: (context, connection) {
+        final callback = switch (connection.connectionState) {
+          ConnectionState.done => state.run,
+          _ => null,
+        };
+
+        return FilledButton.icon(
+          onPressed: callback,
           label: Text("Chạy"),
           icon: Icon(Icons.play_arrow),
-        ),
-      );
+        );
+      },
+    );
+  }
 }
 
 class InitialConditionInput extends StatelessWidget {
@@ -228,6 +241,9 @@ class ExperimentState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// This is just to help serialization
+  String? currentRequestJson;
+
   run() async {
     switch (experimentType) {
       case ExperimentType.simpleSimulation:
@@ -237,6 +253,7 @@ class ExperimentState extends ChangeNotifier {
           tmax: tmaxController.doubleValue,
           dtmax: dtmaxController.doubleValue,
         );
+        currentRequestJson = jsonEncode(request);
         resultImageFuture = api.requestSimulation(request);
       case ExperimentType.phasePortrait:
         final request = PhasePortraitRequest(
@@ -247,27 +264,25 @@ class ExperimentState extends ChangeNotifier {
           tmax: tmaxController.doubleValue,
           dtmax: dtmaxController.doubleValue,
         );
+        currentRequestJson = jsonEncode(request);
         resultImageFuture = api.requestPhasePortrait(request);
       case ExperimentType.bifurcation1d:
-        switch (parameterControllerX.name.value) {
-          case String paramName:
-            final request = Bifurcation1dRequest(
-              parameters: parameters,
-              u0: u0,
-              update: parameterControllerX.value,
-              tmax: tmaxController.doubleValue,
-              dtmax: dtmaxController.doubleValue,
-            );
-            resultImageFuture = api.requestBifurcationDiagram1d(request);
-          default:
-            resultImageFuture = Future.value(null);
-        }
+        final request = Bifurcation1dRequest(
+          parameters: parameters,
+          u0: u0,
+          update: parameterControllerX.value,
+          tmax: tmaxController.doubleValue,
+          dtmax: dtmaxController.doubleValue,
+        );
+        currentRequestJson = jsonEncode(request);
+        resultImageFuture = api.requestBifurcationDiagram1d(request);
       case ExperimentType.bifurcation2d:
         final request = Bifurcation2dRequest(
           parameters: parameters,
           xUpdate: parameterControllerX.value,
           yUpdate: parameterControllerY.value,
         );
+        currentRequestJson = jsonEncode(request);
         resultImageFuture = api.requestBifurcationDiagram2d(request);
     }
 
@@ -277,11 +292,24 @@ class ExperimentState extends ChangeNotifier {
   }
 
   save() async {
-    final result = await FilePicker.platform.saveFile(dialogTitle: "Lưu file");
-    switch (result) {
-      case String savePath:
-        final file = File(savePath);
-        await file.writeAsBytes(resultImage as Uint8List);
+    switch ((resultImage, currentRequestJson)) {
+      case (Uint8List image, String json):
+        final result = await FilePicker.platform.saveFile(
+          dialogTitle: "Lưu file",
+          fileName: "image.png",
+        );
+        switch (result) {
+          case String savePath:
+            final basename = p.withoutExtension(savePath);
+            final jsonname = "$basename.json";
+
+            // Save figure
+            final file = File(savePath);
+            await file.writeAsBytes(image);
+
+            final jsonfile = File(jsonname);
+            await jsonfile.writeAsString(json);
+        }
     }
   }
 
@@ -312,6 +340,8 @@ class ServerUrlEditor extends StatelessWidget {
 }
 
 class ResultImage extends StatelessWidget {
+  const ResultImage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final state = ExperimentState.of(context);
@@ -372,16 +402,7 @@ class _MyHomePageState extends State<MyHomePage> {
             spacing: 10,
             direction: Axis.horizontal,
             children: [
-              Flexible(
-                flex: 3,
-                fit: FlexFit.tight,
-                child: Column(
-                  children: [
-                    Expanded(child: ResultImage()),
-                    SaveButton(),
-                  ],
-                ),
-              ),
+              Flexible(flex: 3, fit: FlexFit.tight, child: ResultImage()),
               Flexible(
                 flex: 1,
                 fit: FlexFit.tight,
@@ -395,8 +416,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     Text("Tham số mô hình", style: textTheme.headlineMedium),
                     Flexible(
                       flex: 1,
-                      child: ParameterInput(),
                       fit: FlexFit.tight,
+                      child: ParameterInput(),
                     ),
                     Text("Nghiệm ban đầu", style: textTheme.headlineMedium),
                     Flexible(
@@ -412,7 +433,14 @@ class _MyHomePageState extends State<MyHomePage> {
                         children: [ExperimentSelection(), ExperimentEditor()],
                       ),
                     ),
-                    RunButton(),
+                    Flex(
+                      direction: Axis.horizontal,
+                      spacing: 10,
+                      children: [
+                        Expanded(child: RunButton()),
+                        Expanded(child: SaveButton()),
+                      ],
+                    ),
                   ],
                 ),
               ),
