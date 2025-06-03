@@ -1,7 +1,7 @@
 name = "EbmCommon"
 uuid = "f104a7c3-3688-4e7c-9c13-313faccad043"
 authors = ["Hung Nguyen Duc <ndgnuh@protonmail.com>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 Chain = "8be319e6-bccf-4806-a6f7-6fae938471bc"

@@ -82,7 +82,7 @@ function response_buffer(data::Vector{UInt8})
     return Response(200, headers, data)
 end
 
-function run_api(base_params::AbstractEbmParams)
+function run_api(base_params::AbstractEbmParams; options...)
     # Bootstrap
     EbmCommon.set_makie_theme!()
     update_params = ParamsUpdater(base_params)
@@ -193,7 +193,7 @@ function run_api(base_params::AbstractEbmParams)
         return response_buffer(fig)
     end
 
-    serve()
+    serve(; options...)
 end
 
 end
