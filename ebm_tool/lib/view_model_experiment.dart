@@ -112,7 +112,6 @@ class VariableVariationEditor extends StatelessWidget {
         Flexible(
           child: DropdownMenu<int>(
             controller: controller.name.formatController,
-            initialSelection: variableSpecs.first.index,
             dropdownMenuEntries: [
               for (final spec in variableSpecs)
                 DropdownMenuEntry(label: spec.name, value: spec.index),
@@ -167,7 +166,6 @@ class ParameterVariationEditor extends StatelessWidget {
         Flexible(
           child: DropdownMenu<String>(
             controller: controller.name.formatController,
-            initialSelection: parameters.first.name,
             dropdownMenuEntries: [
               for (final spec in parameters)
                 DropdownMenuEntry(label: spec.name, value: spec.name),

@@ -41,9 +41,8 @@ class ExperimentSelection extends StatelessWidget {
         Expanded(
           child: DropdownMenu(
             width: 700,
-            initialSelection: state.experimentType,
             onSelected: (e) {
-              state.experimentType = e as ExperimentType;
+              state.experimentType = e;
             },
             dropdownMenuEntries: [
               for (final etype in ExperimentType.values)
@@ -63,7 +62,11 @@ class ExperimentEditor extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = ExperimentState.of(context);
     final modelSpecs = state.modelSpecs;
-    final ExperimentType etype = state.experimentType;
+    final ExperimentType? etype = state.experimentType;
+    if (etype == null) {
+      return Text("Select an experiment first");
+    }
+
     return Column(
       spacing: 10,
       children: [
@@ -111,8 +114,12 @@ class RunButton extends StatelessWidget {
     return FutureBuilder(
       future: state.resultImageFuture,
       builder: (context, connection) {
-        final callback = switch (connection.connectionState) {
-          ConnectionState.done => state.run,
+        final callback = switch ((
+          state.experimentType,
+          connection.connectionState,
+        )) {
+          (null, _) => null,
+          (_, ConnectionState.done) => state.run,
           _ => null,
         };
 
@@ -135,17 +142,14 @@ class InitialConditionInput extends StatelessWidget {
     if (state.modelSpecs == null) return Text("No model");
     final variables = state.modelSpecs!.variables;
     final controllers = state.u0Controllers;
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: Column(
-        children: [
-          for (final (i, variable) in variables.indexed)
-            NumberEditor(
-              controller: controllers[i].formatController,
-              label: "${variable.description} (${variable.name})",
-            ),
-        ],
-      ),
+    return Column(
+      children: [
+        for (final (i, variable) in variables.indexed)
+          NumberEditor(
+            controller: controllers[i].formatController,
+            label: "${variable.description} (${variable.name})",
+          ),
+      ],
     );
   }
 }
@@ -164,17 +168,14 @@ class ParameterInput extends StatelessWidget {
     final parameters = state.modelSpecs!.parameters;
     final controllers = state.parameterControllers;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      child: Column(
-        children: [
-          for (final param in parameters)
-            NumberEditor(
-              controller: controllers[param.name],
-              label: "${param.description} (${param.name})",
-            ),
-        ],
-      ),
+    return Column(
+      children: [
+        for (final param in parameters)
+          NumberEditor(
+            controller: controllers[param.name],
+            label: "${param.description} (${param.name})",
+          ),
+      ],
     );
   }
 }
@@ -183,24 +184,34 @@ class ExperimentState extends ChangeNotifier {
   String? serverUrl;
   Future<Uint8List?> resultImageFuture = Future.value(null);
   Uint8List? resultImage;
+  final inputPanelScrollController = ScrollController();
 
   ModelSpecs? modelSpecs;
-  ExperimentType _experimentType = ExperimentType.simpleSimulation;
+  ExperimentType? _experimentType;
   final Map<String, TextEditingController> parameterControllers = {};
   final List<FloatNotifier> u0Controllers = [];
   final tmaxController = TextEditingController(text: "500.0");
   final dtmaxController = TextEditingController(text: "0.2");
-  final variableControllerX = VariableVariationController();
-  final variableControllerY = VariableVariationController();
-  final parameterControllerX = ParameterVariationController();
-  final parameterControllerY = ParameterVariationController();
+  var variableControllerX = VariableVariationController();
+  var variableControllerY = VariableVariationController();
+  var parameterControllerX = ParameterVariationController();
+  var parameterControllerY = ParameterVariationController();
 
   final serverUrlController = TextEditingController(text: "http://localhost");
 
   get experimentType => _experimentType;
   set experimentType(value) {
     _experimentType = value;
+    variableControllerX = VariableVariationController();
+    variableControllerY = VariableVariationController();
+    parameterControllerX = ParameterVariationController();
+    parameterControllerY = ParameterVariationController();
+
     notifyListeners();
+    Future.delayed(Duration(milliseconds: 100)).then((_) {
+      final ctl = inputPanelScrollController;
+      ctl.jumpTo(ctl.position.maxScrollExtent);
+    });
   }
 
   Api get api => Api(serverUrlController.text);
@@ -284,6 +295,9 @@ class ExperimentState extends ChangeNotifier {
         );
         currentRequestJson = jsonEncode(request);
         resultImageFuture = api.requestBifurcationDiagram2d(request);
+      default:
+        resultImageFuture = Future.value(null);
+        currentRequestJson = "";
     }
 
     notifyListeners();
@@ -345,20 +359,22 @@ class ResultImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = ExperimentState.of(context);
-    return FutureBuilder(
-      future: state.resultImageFuture,
-      builder: (context, future) {
-        switch ((future.connectionState, future.data)) {
-          case (ConnectionState.done, Uint8List data):
-            return Image.memory(data, fit: BoxFit.contain);
-          case (ConnectionState.done, null):
-            return Text("No image");
-          case (ConnectionState.waiting || ConnectionState.active, _):
-            return Center(child: CircularProgressIndicator());
-          default:
-            return Text("Something went wrong");
-        }
-      },
+    return Center(
+      child: FutureBuilder(
+        future: state.resultImageFuture,
+        builder: (context, future) {
+          switch ((future.connectionState, future.data)) {
+            case (ConnectionState.done, Uint8List data):
+              return Image.memory(data, fit: BoxFit.contain);
+            case (ConnectionState.done, null):
+              return Text("No image");
+            case (ConnectionState.waiting || ConnectionState.active, _):
+              return Center(child: CircularProgressIndicator());
+            default:
+              return Text("Something went wrong");
+          }
+        },
+      ),
     );
   }
 }
@@ -388,10 +404,36 @@ class SaveButton extends StatelessWidget {
   }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class ExperimentInputArea extends StatelessWidget {
+  const ExperimentInputArea({super.key});
+
   @override
   Widget build(BuildContext context) {
     final textTheme = TextTheme.of(context);
+    final state = ExperimentState.of(context);
+    return SingleChildScrollView(
+      controller: state.inputPanelScrollController,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 10,
+        children: [
+          ServerUrlEditor(),
+          Text("Tham số mô hình", style: textTheme.headlineMedium),
+          ParameterInput(),
+          Text("Nghiệm ban đầu", style: textTheme.headlineMedium),
+          InitialConditionInput(),
+          Text("Tham số thí nghiệm", style: textTheme.headlineMedium),
+          ExperimentSelection(),
+          ExperimentEditor(),
+        ],
+      ),
+    );
+  }
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: ChangeNotifierProvider(
@@ -412,27 +454,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: <Widget>[
-                    ServerUrlEditor(),
-                    Text("Tham số mô hình", style: textTheme.headlineMedium),
-                    Flexible(
-                      flex: 1,
-                      fit: FlexFit.tight,
-                      child: ParameterInput(),
-                    ),
-                    Text("Nghiệm ban đầu", style: textTheme.headlineMedium),
-                    Flexible(
-                      flex: 1,
-                      fit: FlexFit.tight,
-                      child: InitialConditionInput(),
-                    ),
-                    Text("Tham số thí nghiệm", style: textTheme.headlineMedium),
-                    Flexible(
-                      flex: 1,
-                      fit: FlexFit.tight,
-                      child: Column(
-                        children: [ExperimentSelection(), ExperimentEditor()],
-                      ),
-                    ),
+                    Flexible(child: ExperimentInputArea()),
                     Flex(
                       direction: Axis.horizontal,
                       spacing: 10,

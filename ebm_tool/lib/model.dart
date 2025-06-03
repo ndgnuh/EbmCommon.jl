@@ -195,7 +195,7 @@ enum ExperimentType {
   simpleSimulation(value: "simulation", label: "Chạy mô phỏng đơn thuần"),
   phasePortrait(
     value: "phase",
-    label: "Vẽ biểu đồ pha",
+    label: "Vẽ hình ảnh pha",
     variesInitialCondition: true,
   ),
   bifurcation1d(
@@ -205,7 +205,7 @@ enum ExperimentType {
   ),
   bifurcation2d(
     value: "bifurcation2d",
-    label: "Biểu đồ rẽ nhánh (2 tham số)",
+    label: "Bản đồ ổn định địa phương (2 tham số)",
     needSimulation: false,
     variesParameters: 2,
   );
