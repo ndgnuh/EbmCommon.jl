@@ -1,6 +1,9 @@
 using EbmCommon
 using EbmCommon.Examples
+using EbmCommon: ModelSpecs, @generate_model_params
+using EbmCommon.Api: run_api
 using CairoMakie
+
 
 
 #= const params = Examples.PredatorPreyParams() =#
@@ -55,5 +58,5 @@ using CairoMakie
 #= end =#
 
 let params = Examples.PredatorPreyParams()
-    EbmCommon.run_api(params)
+    run_api(params)
 end

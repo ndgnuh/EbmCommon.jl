@@ -27,6 +27,7 @@ end
     description::String
     default::Float64
     alias::Symbol = name
+    latex_name::String = String(name)
 end
 
 @kwdef struct ModelSpecs
@@ -142,6 +143,7 @@ include("bifurcation-2d.jl")
 include("phase-2d.jl")
 include("recipes.jl")
 include("api-server.jl")
+include("macros.jl")
 include("example.jl")
 
 end # module EbmCommon

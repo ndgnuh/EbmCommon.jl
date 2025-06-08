@@ -3,37 +3,8 @@ module Examples
 import ..EbmCommon
 import ..EbmCommon: AbstractEbmParams, EvolutionRule
 import ..EbmCommon: VariableSpecs, ParameterSpecs, ModelSpecs
+import ..EbmCommon: @generate_model_params
 using UnPack: @unpack
-
-@kwdef struct PredatorPreyParams <: AbstractEbmParams
-    K::Float64 = 2.0
-    α::Float64 = 1.1
-    β::Float64 = 0.4
-    γ::Float64 = 0.1
-    δ::Float64 = 0.4
-end
-
-function predator_prey_rule!(du, u, params::PredatorPreyParams, _)
-    @unpack K, α, β, γ, δ = params
-    x, y = u
-    du[1] = α * x * (1 - x / K) - β * x * y
-    du[2] = δ * x * y - γ * y
-    nothing
-end
-
-function predator_prey_update(params::PredatorPreyParams, changes...)
-    d = collect(params)
-    for (k, v) in changes
-        d[k] = v
-    end
-    return PredatorPreyParams(; d...)
-end
-
-EbmCommon.EvolutionRule(::PredatorPreyParams) = predator_prey_rule!
-EbmCommon.ParamsUpdater(::PredatorPreyParams) = predator_prey_update
-EbmCommon.number_of_variables(::PredatorPreyParams) = 2
-EbmCommon.number_of_equilibria(::PredatorPreyParams) = 3
-
 
 const model_specifications = let
     parameters = [
@@ -85,6 +56,43 @@ const model_specifications = let
 
     ModelSpecs(; variables, parameters)
 end
+
+
+# This will generate this code from the model specifications
+# For this model, this duplication is nothing, but for
+# models with a lot of parameters, it is a pain to write 
+# the parameters...
+@kwdef struct PredatorPreyParams <: AbstractEbmParams
+    K::Float64 = 2.0
+    α::Float64 = 1.1
+    β::Float64 = 0.4
+    γ::Float64 = 0.1
+    δ::Float64 = 0.4
+end
+# @generate_model_params(PredatorPreyParams, esc(model_specifications))
+
+function predator_prey_rule!(du, u, params::PredatorPreyParams, _)
+    @unpack K, α, β, γ, δ = params
+    x, y = u
+    du[1] = α * x * (1 - x / K) - β * x * y
+    du[2] = δ * x * y - γ * y
+    nothing
+end
+
+function predator_prey_update(params::PredatorPreyParams, changes...)
+    d = collect(params)
+    for (k, v) in changes
+        d[k] = v
+    end
+    return PredatorPreyParams(; d...)
+end
+
+EbmCommon.EvolutionRule(::PredatorPreyParams) = predator_prey_rule!
+EbmCommon.ParamsUpdater(::PredatorPreyParams) = predator_prey_update
+EbmCommon.number_of_variables(::PredatorPreyParams) = 2
+EbmCommon.number_of_equilibria(::PredatorPreyParams) = 3
+
+
 
 EbmCommon.get_model_specifications(::PredatorPreyParams) = model_specifications
 
