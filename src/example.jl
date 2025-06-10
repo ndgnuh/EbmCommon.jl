@@ -3,7 +3,6 @@ module Examples
 import ..EbmCommon
 import ..EbmCommon: AbstractEbmParams, EvolutionRule
 import ..EbmCommon: VariableSpecs, ParameterSpecs, ModelSpecs
-import ..EbmCommon: @generate_model_params
 using UnPack: @unpack
 
 const model_specifications = let
@@ -12,18 +11,21 @@ const model_specifications = let
             name=:α,
             description="Intrinsic growth of preys",
             alias=:alpha,
+            latexname=raw"\alpha",
             default=0.5,
         ),
         ParameterSpecs(
             name=:β,
             description="Predator hunting rate",
             alias=:beta,
+            latexname=raw"\beta",
             default=0.5,
         ),
         ParameterSpecs(
             name=:δ,
             description="Conversion rate from preys to predators",
             alias=:delta,
+            latexname=raw"\delta",
             default=0.5,
         ),
         ParameterSpecs(
@@ -31,6 +33,7 @@ const model_specifications = let
             description="Natural death rate of predators",
             alias=:gamma,
             default=0.5,
+            latexname=raw"\gamma",
         ),
         ParameterSpecs(
             name=:K,

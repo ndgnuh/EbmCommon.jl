@@ -219,7 +219,7 @@ function _model_specs(expr)
     # f(::MyType)
     # f(::Type{MyType})
     type_ex_1 = Expr(:(::), esc(struct_path))
-    type_ex_2 = Expr(:(::), Expr(:curly, :Type, esc(struct_path)))
+    type_ex_2 = Expr(:(::), esc(Expr(:curly, :Type, struct_path)))
 
     # EbmCommon.get_model_specifications
     get_model_specifications_expr = let
