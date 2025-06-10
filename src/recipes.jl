@@ -53,9 +53,8 @@ function Makie.plot!(
     t = solution.t
     for (idx, variable) in variables
         x = map(u -> u[idx], solution.u)
-        label = variable.description
-        @show label
-        lines!(plot, t, x; label=variable.description)
+        label = LaTeXString(variable.latexname)
+        lines!(plot, t, x; label)
     end
 
     return plot
@@ -167,8 +166,8 @@ function Makie.plot(data::PhaseData2d)
     variables = get_variable_specifications(params)
     fig = Figure()
     ax = Axis(fig[1, 1],
-        xlabel=variables[xind].description,
-        ylabel=variables[yind].description
+        xlabel=LaTeXString(variables[xind].latexname),
+        ylabel=LaTeXString(variables[yind].latexname),
     )
     p = plot!(ax, data)
     resize_to_layout!(fig)
@@ -190,7 +189,8 @@ function Makie.plot(data::SimulationResult)
     t = solution.t
     plots = map(collect(variables)) do (idx, variable)
         x = map(u -> u[idx], solution.u)
-        lines!(ax, t, x; label=variable.description)
+        label = LaTeXString(variable.latexname)
+        lines!(ax, t, x; label=label)
     end
 
     axislegend(ax)
@@ -215,8 +215,8 @@ function Makie.plot(
 
     # Mapping to categorical heatmap
     colormap = Makie.wong_colors()
-    xlabel = param_specs[xname].description
-    ylabel = param_specs[yname].description
+    xlabel = LaTeXString(param_specs[xname].latexname)
+    ylabel = LaTeXString(param_specs[yname].latexname)
     flags = convert.(UInt8, transpose(stability_map))
     cats = sort!(unique(flags))
     labels = [stability_flagname(se, flag) for flag in cats]

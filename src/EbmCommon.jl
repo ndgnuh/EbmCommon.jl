@@ -10,6 +10,7 @@ using Chain: @chain
 using RequiredInterfaces
 using MakieCore
 using Makie
+using Makie.LaTeXStrings
 using UnPack
 import Oxygen
 
@@ -17,9 +18,10 @@ abstract type AbstractEbmParams end
 
 @kwdef struct VariableSpecs
     name::Symbol
-    description::String
     default::Float64
     index::Int
+    description::String = "u[i]"
+    latexname::String = String(name)
 end
 
 @kwdef struct ParameterSpecs
@@ -27,7 +29,7 @@ end
     description::String
     default::Float64
     alias::Symbol = name
-    latex_name::String = String(name)
+    latexname::String = String(name)
 end
 
 @kwdef struct ModelSpecs
@@ -145,5 +147,10 @@ include("recipes.jl")
 include("api-server.jl")
 include("macros.jl")
 include("example.jl")
+
+import .Macros: @ebmspecs
+
+public @ebmspecs
+public AbstractEbmParams
 
 end # module EbmCommon
