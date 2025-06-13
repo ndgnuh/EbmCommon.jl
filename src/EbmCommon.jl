@@ -139,6 +139,17 @@ function Base.collect(p::AbstractEbmParams)
     return Dict(name => getproperty(p, name) for name in names)
 end
 
+"""
+Pretty pritn for AbstractEbmParams
+"""
+function Base.show(io::IO, params::T) where {T<:AbstractEbmParams}
+    names = propertynames(params)
+    values = Iterators.map(name -> getproperty(params, name), names)
+    lines = ("\t$name = $value" for (name, value) in zip(names, values))
+    output = "$T\n$(join(lines, '\n'))"
+    print(io, output)
+end
+
 include("simulate.jl")
 include("bifurcation-1d.jl")
 include("bifurcation-2d.jl")
