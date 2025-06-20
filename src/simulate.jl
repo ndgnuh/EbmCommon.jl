@@ -1,3 +1,15 @@
+"""
+A wrapper for the simulation result of an ODE problem.
+
+### Properties
+- `params::T`: The parameters used for the simulation.
+- `u0::Vector{Float64}`: Initial conditions for the simulation.
+- `solution::ODESolution`: The solution of the ODE problem.
+- `tspan`: Time span of the simulation.
+- `solver_options = NamedTuple()`: Options used by the ODE solver.
+
+See also: `simulate`, `ODESolution`, `AbstractEbmParams`.
+"""
 @kwdef struct SimulationResult{T<:AbstractEbmParams}
     params::T
     u0::Vector{Float64}
@@ -7,10 +19,15 @@
 end
 
 """
-Simulate the model, the parameters must have an evolution
-rule to be simulated.
+$(SIGNATURES)
 
-Returns SimulationResult (Wrapped) to help with plotting.
+Simulate the model, the parameters must have an evolution
+rule to be simulated, returns a `SimulationResult`.
+
+The parameters must implements: `EvolutionRule` for this
+function to work.
+
+See also: `ODESolution`, `SimulationResult`.
 """
 function simulate(
     params::AbstractEbmParams,

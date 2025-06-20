@@ -1,9 +1,10 @@
 """
 A note:
-- Legends and label kind of sucks in recipe
-- I should probably write custom ploting function, just like 
-  the previous UserApi.jl file.
-- https://github.com/MakieOrg/Makie.jl/issues/4348
+
+  - Legends and label kind of sucks in recipe
+  - I should probably write custom ploting function, just like
+    the previous UserApi.jl file.
+  - https://github.com/MakieOrg/Makie.jl/issues/4348
 """
 MakieCore.plottype(::BifurcationData2d) = MakieCore.Heatmap
 MakieCore.plottype(::BifurcationData1d) = BifurcationDiagram1d
@@ -23,28 +24,19 @@ MakieCore.plottype(::PhaseData2d) = PhasePortrait2d
 end
 
 @recipe(BifurcationDiagram1d, data) do scene
-    Attributes(
-        k_samples=50,
-        baseline_color=:red,
-        labels=nothing,
-        markersize=4,
-    )
+    Attributes(; k_samples = 50, baseline_color = :red, labels = nothing, markersize = 4)
 end
 
 @recipe(PhasePortrait2d, data) do scene
-    Attributes(
-        orbit_color=:black,
-        start_color=:blue,
-        stop_color=:red,
-    )
+    Attributes(; orbit_color = :black, start_color = :blue, stop_color = :red)
 end
 
 """
 Plot phase portrait recipe
 """
 function Makie.plot!(
-    plot::CompartmentPlot{Tuple{SimulationResult{T}}}
-) where {T<:AbstractEbmParams}
+    plot::CompartmentPlot{Tuple{SimulationResult{T}}},
+) where {T <: AbstractEbmParams}
     data = plot[1][]
     params = data.params
     solution = data.solution
@@ -63,9 +55,7 @@ end
 """
 Plot phase portrait recipe
 """
-function Makie.plot!(
-    p::PhasePortrait2d{Tuple{PhaseData2d{P,T,X,Y}}}
-) where {P,T,X,Y}
+function Makie.plot!(p::PhasePortrait2d{Tuple{PhaseData2d{P, T, X, Y}}}) where {P, T, X, Y}
     o = p[1][]
 
     xind = first(o.xchange)
@@ -74,15 +64,15 @@ function Makie.plot!(
         u = sol.u
         x = map(x -> x[xind], u)
         y = map(x -> x[yind], u)
-        lines!(p, x, y; color=p.orbit_color)
+        lines!(p, x, y; color = p.orbit_color)
     end
 
     for sol in o.solutions
         u = sol.u
         start = u[begin]
         stop = u[end]
-        scatter!(p, [(start[xind], start[yind])], color=p.start_color)
-        scatter!(p, [(stop[xind], stop[yind])], color=p.stop_color)
+        scatter!(p, [(start[xind], start[yind])]; color = p.start_color)
+        scatter!(p, [(stop[xind], stop[yind])]; color = p.stop_color)
     end
 
     return p
@@ -91,7 +81,9 @@ end
 """
 Recipe for bifurcation diagram 1D.
 """
-function Makie.plot!(p::BifurcationDiagram1d{Tuple{EbmCommon.BifurcationData1d{P,T}}}) where {P,T}
+function Makie.plot!(
+    p::BifurcationDiagram1d{Tuple{EbmCommon.BifurcationData1d{P, T}}},
+) where {P, T}
     data::EbmCommon.BifurcationData1d = p[1][]
     param_name, param_values = data.change
     sols = data.solutions
@@ -106,16 +98,16 @@ function Makie.plot!(p::BifurcationDiagram1d{Tuple{EbmCommon.BifurcationData1d{P
     for (x, sol) in zip(param_values, sols)
         append!(xs, fill(x, k))
         for i in 1:n
-            append!(yss[i], map(u -> u[i], sol.u)[end-k+1:end])
+            append!(yss[i], map(u -> u[i], sol.u)[(end - k + 1):end])
         end
     end
 
     # Plotting
     ymin = minimum(minimum(ys) for ys in yss)
     ymax = maximum(maximum(ys) for ys in yss)
-    lines!([(xbase, ymin), (xbase, ymax)]; color=p.baseline_color)
+    lines!([(xbase, ymin), (xbase, ymax)]; color = p.baseline_color)
     for (i, ys) in enumerate(yss)
-        scatter!(p, xs, ys; markersize=p.markersize, label=labels[i])
+        scatter!(p, xs, ys; markersize = p.markersize, label = labels[i])
     end
 
     return p
@@ -124,35 +116,29 @@ end
 """
 Set default theme for Makie
 """
-function set_makie_theme!(; fontsize=14)
-    theme = Theme(
-        figure_padding=2,
-        fontsize=fontsize,
-        markersize=7,
-        CairoMakie=(
-            antialias=:best,
-            pt_per_unit=2.0,
-            px_per_unit=2.0,
-        ),
-        Axis=(
-            xticks=WilkinsonTicks(7, k_min=5, k_max=11),
-            yticks=WilkinsonTicks(7, k_min=5, k_max=11),
-            width=600, height=300,
+function set_makie_theme!(; fontsize = 14)
+    theme = Theme(;
+        figure_padding = 2,
+        fontsize = fontsize,
+        markersize = 7,
+        CairoMakie = (antialias = :best, pt_per_unit = 2.0, px_per_unit = 2.0),
+        Axis = (
+            xticks = WilkinsonTicks(7; k_min = 5, k_max = 11),
+            yticks = WilkinsonTicks(7; k_min = 5, k_max = 11),
+            width = 600,
+            height = 300,
             # aspect=21.0 / 9,
-            pallete=Makie.wong_colors(),
+            pallete = Makie.wong_colors(),
         ),
-        Axis3=(
-            xticks=WilkinsonTicks(7, k_min=5, k_max=11),
-            yticks=WilkinsonTicks(7, k_min=5, k_max=11),
-            width=485, height=300,
-            pallete=Makie.wong_colors(),
+        Axis3 = (
+            xticks = WilkinsonTicks(7; k_min = 5, k_max = 11),
+            yticks = WilkinsonTicks(7; k_min = 5, k_max = 11),
+            width = 485,
+            height = 300,
+            pallete = Makie.wong_colors(),
         ),
-        Lines=(
-            linewidth=2.5,
-            linestyle=:solid,
-        ),
+        Lines = (linewidth = 2.5, linestyle = :solid),
     )
-
 
     theme = merge(theme, Makie.theme_latexfonts())
     set_theme!(theme)
@@ -165,9 +151,10 @@ function Makie.plot(data::PhaseData2d)
     xind, yind = first(xchange), first(ychange)
     variables = get_variable_specifications(params)
     fig = Figure()
-    ax = Axis(fig[1, 1],
-        xlabel=LaTeXString(variables[xind].latexname),
-        ylabel=LaTeXString(variables[yind].latexname),
+    ax = Axis(
+        fig[1, 1];
+        xlabel = LaTeXString(variables[xind].latexname),
+        ylabel = LaTeXString(variables[yind].latexname),
     )
     p = plot!(ax, data)
     resize_to_layout!(fig)
@@ -178,9 +165,10 @@ function Makie.plot(data::SimulationResult)
     fig = Figure()
     params = data.params
     model_specs::ModelSpecs = get_model_specifications(params)
-    ax = Axis(fig[1, 1],
-        xlabel=model_specs.time_axis_name,
-        ylabel=model_specs.state_axis_name
+    ax = Axis(
+        fig[1, 1];
+        xlabel = model_specs.time_axis_name,
+        ylabel = model_specs.state_axis_name,
     )
     params = data.params
     solution = data.solution
@@ -190,7 +178,7 @@ function Makie.plot(data::SimulationResult)
     plots = map(collect(variables)) do (idx, variable)
         x = map(u -> u[idx], solution.u)
         label = LaTeXString(variable.latexname)
-        lines!(ax, t, x; label=label)
+        lines!(ax, t, x; label = label)
     end
 
     axislegend(ax)
@@ -202,10 +190,7 @@ end
 """
 Draw theoretical local stability when changing 2 parameters.
 """
-function Makie.plot(
-    data::BifurcationData2d,
-    horizontal_legend=false,
-)
+function Makie.plot(data::BifurcationData2d, horizontal_legend = false)
     # Unpack arguments
     @unpack base_params, xvalues, yvalues, stability_map, update_x, update_y = data
     xname = first(update_x)
@@ -224,12 +209,12 @@ function Makie.plot(
     cat_ids::Matrix{Int} = something(indexin(flags, cats), -1)
 
     # Visualize
-    fig = Figure(figure_padding=10)
+    fig = Figure(; figure_padding = 10)
     ax = Axis(fig[1, 1]; xlabel, ylabel)
-    p = heatmap!(ax, xvalues, yvalues, cat_ids, colormap=colors)
-    elements = [PolyElement(color=color) for color in colors]
+    p = heatmap!(ax, xvalues, yvalues, cat_ids; colormap = colors)
+    elements = [PolyElement(; color = color) for color in colors]
     if horizontal_legend
-        Legend(fig[2, 1], elements, labels, orientation=:horizontal)
+        Legend(fig[2, 1], elements, labels; orientation = :horizontal)
     else
         Legend(fig[1, 2], elements, labels)
     end

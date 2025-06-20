@@ -11,7 +11,6 @@ using ..EbmCommon: run_bifurcation_1d
 using ..EbmCommon: run_bifurcation_2d
 using ..EbmCommon: simulate
 using ..EbmCommon: AbstractEbmParams, ParamsUpdater
-using ..EbmCommon: get_model_specifications
 
 
 const experiment_router = Oxygen.router(

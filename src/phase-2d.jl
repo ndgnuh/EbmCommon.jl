@@ -1,40 +1,65 @@
-@kwdef struct PhaseData2d{P<:AbstractEbmParams,T<:AbstractVector,ChangeX,ChangeY}
+export PhasePortrait2d, run_phase_portrait_2d
+
+"""
+Struct to hold data for 2D phase portrait.
+
+# Properties:
+
+  - `params`: Model parameters
+  - `u0`: Initial conditions vector
+  - `xchange`: Pair of (`xindex`, `xvalues`) that specify change in `index`-th component.
+  - `ychange`: Pair of (`yindex`, `yvalues`) that specify change in `index`-th component.
+  - `tspan`: Time span for the simulation
+  - `solver_options`: Options for the numerical ODE solver
+  - `xs`: x-coordinates of the solved orbits
+  - `ys`: y-coordinates of the solved orbits
+  - `solutions`: List of ODESolutions for each point in the grid
+
+See also: `run_phase_portrait_2d`.
+"""
+@kwdef struct PhasePortrait2d{P <: AbstractEbmParams, T1, T2}
     # Input
     params::P
-    u0::T
-    xchange::Pair{Int,ChangeX}
-    ychange::Pair{Int,ChangeY}
-    tspan
-    solver_options
+    u0::Vector
+    xchange::Pair{Int, T1}
+    ychange::Pair{Int, T2}
+    tspan::Any
+    solver_options::Any
     # Results
-    xs
-    ys
-    solutions
+    xs::Any
+    ys::Any
+    solutions::Any
 end
 
 """
-Run phase portrait (2D) of a system. 
+Change two input components of the initial conditions and run the model
+to give a 2D phase portrait of the model. Returns `PhasePortrait2d` struct.
 
 See `DifferentialEquations` package documentation for more detail.
 This function is just a wrapper for `DifferentialEquations`.
 
-- evolution: Function!(du, u, params, t) or Function(u, params, t) -> du
-- params: Model parameters
-- u0: Vector
-- xchange: pair of int -> values that specify change in x component,
-- ychange: pair of int -> values that specify change in y component,
-- solver: numerical solver (default to `Tsit5`)
-- tspan: solver's tspan (default to `(0, 500)`)
-- solver_options: solver's options
+# Parameters
+
+  - `params`: Model parameters of type `T`, where the method `EvolutionRule(::Type{T})` is defined.
+  - `u0`: Initial conditions vector.
+  - `xchange`: Pair of (`xindex`, `xvalues`) that specify change in `index`-th component.
+  - `ychange`: Pair of (`yindex`, `yvalues`) that specify change in `index`-th component.
+
+# Options
+
+  - `tspan`: Time span for the simulation, default is `(0, 500.0)`.
+  - `solver_options`: Options for the numerical ODE solver, default is an empty `NamedTuple`.
+
+See also: `PhasePortrait2d`, `DifferentialEquations.solve`.
 """
 function run_phase_portrait_2d(
     params::AbstractEbmParams,
     u0::AbstractVector,
-    xchange::Pair{Int,ChangeX},
-    ychange::Pair{Int,ChangeY};
-    tspan=(0, 500.0),
-    solver_options=NamedTuple(),
-) where {ChangeX,ChangeY}
+    xchange::Pair{Int, ChangeX},
+    ychange::Pair{Int, ChangeY};
+    tspan = (0, 500.0),
+    solver_options = NamedTuple(),
+) where {ChangeX, ChangeY}
 
     # Grid where extrema rules
     xind, xvals = xchange
@@ -58,10 +83,15 @@ function run_phase_portrait_2d(
         _simulate(params, u0_, tspan; solver_options...)
     end
 
-    return PhaseData2d(;
-        params, u0,
-        xchange, ychange,
-        xs, ys, solutions,
-        tspan, solver_options
+    return PhasePortrait2d(;
+        params,
+        u0,
+        xchange,
+        ychange,
+        xs,
+        ys,
+        solutions,
+        tspan,
+        solver_options,
     )
 end

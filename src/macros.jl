@@ -5,7 +5,7 @@ Macro module
 Support this kind of syntax:
 
 ```julia
-@ebmspecs begin
+PredatorPreyParams = @ebmspecs begin
 	time_axis_name = "time"
 	state_axis_name = "biomass"
 	variables = [

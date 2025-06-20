@@ -1,31 +1,13 @@
-const BIFURCATION_DIAGRAM_1D_DOC = """
-- `output_indices::Vector{Int}=[1]`: Indices of the output variables to be plotted.
-- `output_labels::Vector{String}`: Labels for the output variables. If not provided, it will use the default variable names model.
-- `ylabel::String=get_model_specifications(params).state_axis_name`: Label for the y-axis.
-- `cutoff_at_the_end::Real=0.2`: Number of steps or fraction of steps of the end of the simulation to be cut off.
-    If the value is an integer, it will be treated as the number of steps to cut off.
-    If the value is a float, it will be treated as a fraction of the total steps to cut off.
-- `baseline_color=:red`: Color of the baseline line indicating the parameter value.
-- `baseline_linewidth=1`: Width of the baseline line.
-- `markersize=2`: Size of the markers in the plot.
-"""
+export plot_bifurcation_1d
 
 """
-     $(SIGNATURES)
+     $(TYPEDSIGNATURES)
 
 Change 1 parameter of the model and plot the changes in the final outputs.
 
-### Parameters
-- `params::AbstractEbmParams`: Parameters of the model.
-- `u0::Vector`: Initial condition for the system.
-- `change::Pair{Symbol}`: A pair of (parameter name, parameter values) indicate the parameter to be varied
-    when drawing the bifurcation diagram. Parameter values should be a vector or an iterable collection of values.
+This function receives the same inputs of `run_bifurcation_1d` and of `plot_bifurcation_1d`.
 
-### Options
-
-- `tspan=(0.0, 1000.0)`: Time span for the simulation.
-$(BIFURCATION_DIAGRAM_1D_DOC)
-- `kwargs...`: Additional keyword arguments passed to `run_bifurcation_1d`.
+See also: `run_bifurcation_1d`, `BifurcationData1d`.
 """
 function plot_bifurcation_1d(
     params,
@@ -60,10 +42,23 @@ end
 """
     $(SIGNATURES)
 
-Plot the bifurcation diagram from `Bifurcation1d`.
+Plot the bifurcation diagram from `BifurcationData1d`.
 
-### Options
-$(BIFURCATION_DIAGRAM_1D_DOC)
+# Parameters
+- `data::Bifurcation1d{Params}`: Bifurcation data containing the results of the analysis.
+  It should contain the following fields:
+
+# Options
+
+- `output_indices::Vector{Int}=[1]`: Indices of the output variables to be plotted.
+- `output_labels::Vector{String}`: Labels for the output variables. If not provided, it will use the default variable names model.
+- `ylabel::String=get_model_specifications(params).state_axis_name`: Label for the y-axis.
+- `cutoff_at_the_end::Real=0.2`: Number of steps or fraction of steps of the end of the simulation to be cut off.
+    If the value is an integer, it will be treated as the number of steps to cut off.
+    If the value is a float, it will be treated as a fraction of the total steps to cut off.
+- `baseline_color=:red`: Color of the baseline line indicating the parameter value.
+- `baseline_linewidth=1`: Width of the baseline line.
+- `markersize=2`: Size of the markers in the plot.
 """
 function plot_bifurcation_1d(
     data::Bifurcation1d{Params};
@@ -75,7 +70,7 @@ function plot_bifurcation_1d(
     baseline_color = :red,
     baseline_linewidth = 1,
     markersize = 3,
-) where {Params <: AbstractEbmParams}
+) where {Params}
     # Unpack
     solutions = data.solutions
     change = data.change
