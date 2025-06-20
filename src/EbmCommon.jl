@@ -322,11 +322,12 @@ function check_implemented_methods(::Type{T}) where {T}
         (get_local_stabilities, (T,), (AbstractEbmParams,)),
     ]
     for (method, sig_impl, sig_abs) in methods_to_check
-        #= @info sig_impl, sig_abs =#
         if !_has_implemented_method(method, sig_impl, sig_abs)
             @error "Method $(method) is not implemented for $T"
         end
     end
+
+    return true
 end
 
 public check_implemented_methods
