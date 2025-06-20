@@ -6,37 +6,30 @@ export plot_bifurcation_1d
 Change 1 parameter of the model and plot the changes in the final outputs.
 
 This function receives the same inputs of `run_bifurcation_1d` and of `plot_bifurcation_1d`.
+The `kwargs` are passed to `plot_bifurcation_1d`.
 
 See also: `run_bifurcation_1d`, `BifurcationData1d`.
 """
 function plot_bifurcation_1d(
-    params,
+    params::T,
     u0::Vector,
     change::Pair{Symbol};
     tspan = (0.0, 1000.0),
-    output_indices::Vector = [1],
-    output_labels::Vector = get_latex_name.(params, output_indices),
-    xlabel::String = get_latex_name(params, first(change)),
-    ylabel::String = get_ylabel(params),
-    cutoff_at_the_end::Real = 0.2,
-    baseline_color = :red,
-    baseline_linewidth = 1,
-    markersize = 3,
+    change_options = NamedTuple(),
+    solver = get_default_solver(T),
+    solver_options = get_default_solver_options(T),
     kwargs...,
-)
-    # Run
-    output = run_bifurcation_1d(params, u0, change; tspan = tspan, kwargs...)
-    plot_bifurcation_1d(
-        output;
-        output_indices = output_indices,
-        output_labels = output_labels,
-        xlabel = xlabel,
-        ylabel = ylabel,
-        cutoff_at_the_end = cutoff_at_the_end,
-        baseline_color = baseline_color,
-        baseline_linewidth = baseline_linewidth,
-        markersize = markersize,
+) where {T}
+    output = run_bifurcation_1d(
+        params,
+        u0,
+        change;
+        tspan = tspan,
+        change_options = change_options,
+        solver = solver,
+        solver_options = solver_options,
     )
+    plot_bifurcation_1d(output; kwargs...)
 end
 
 """
@@ -62,10 +55,10 @@ Plot the bifurcation diagram from `BifurcationData1d`.
 """
 function plot_bifurcation_1d(
     data::Bifurcation1d{Params};
-    output_indices::Vector = [1],
-    output_labels::Vector = get_latex_name.(Params, output_indices),
-    xlabel::String = get_latex_name(Params, first(data.change)),
-    ylabel::String = get_ylabel(Params),
+    output_indices = [1],
+    output_labels = [get_latex_name(Params, i) for i in output_indices],
+    xlabel = get_latex_name(Params, first(data.change)),
+    ylabel = get_ylabel(Params),
     cutoff_at_the_end::Real = 0.2,
     baseline_color = :red,
     baseline_linewidth = 1,
@@ -94,9 +87,9 @@ function plot_bifurcation_1d(
         append!(xs, fill(param_value, cutoff_step))
 
         # Collect the output values from cutoff point
-        u = sol.u
         for i in output_indices
-            append!(yss[i], map(u -> u[i], sol.u)[(end - cutoff_step + 1):end])
+            y = get_compartment(sol.u, i)
+            append!(yss[i], y[(end - cutoff_step + 1):end])
         end
     end
 

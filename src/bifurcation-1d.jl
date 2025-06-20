@@ -16,8 +16,8 @@ Hold the experiment data for a 1D bifurcation analysis.
     the parameter specified in `change`.
   - `solutions::Vector{ODESolution}`: A vector of ODE solutions
     corresponding to each parameter set.
-  - `change_options = NamedTuple()`: Options for changing parameters.
-  - `solver_options = NamedTuple()`: Options for the ODE solver.
+  - `change_options`: Options for changing parameters.
+  - `solver_options`: Options for the ODE solver.
 """
 @kwdef struct Bifurcation1d{Params <: AbstractEbmParams, T}
     base_params::Params
@@ -27,7 +27,7 @@ Hold the experiment data for a 1D bifurcation analysis.
     params::Vector{Params}
     solutions::Vector{ODESolution}
     change_options = NamedTuple()
-    solver_options = NamedTuple()
+    solver_options = get_solver_options(T)
 end
 
 """
@@ -39,20 +39,21 @@ Returns a `Bifurcation1d` object containing the results.
 See also: `plot_bifurcation_1d`, `Bifurcation1d`.
 """
 function run_bifurcation_1d(
-    base_params::AbstractEbmParams,
+    base_params::T,
     u0::AbstractVector,
     change::Pair;
     tspan = (0.0f0, 500.0f0),
     change_options = NamedTuple(),
-    solver_options = (dtmax = 0.2,),
-)
+    solver = get_default_solver(T),
+    solver_options = get_default_solver_options(T),
+) where {T}
     # Data
     param_name, param_values = change
     params = map(param_values) do value
         update_params(base_params, param_name => value; change_options...)
     end
     solutions::Vector{ODESolution} = map(params) do params_
-        _simulate(params_, u0, tspan; solver_options...)
+        _simulate(params_, u0, tspan; solver, solver_options)
     end
 
     return Bifurcation1d(;

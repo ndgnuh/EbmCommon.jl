@@ -10,31 +10,39 @@ Plot compartment simulation results using Makie.
 - `data::SimulationResult{T}`: The simulation result containing the parameters and solution, where `T` is a subtype of `AbstractEbmParams`.
 - `xlabel = get_xlabel(T)`: Label for the x-axis, defaults to the LaTeX name of the first parameter.
 - `ylabel = get_ylabel(T)`: Label for the y-axis, defaults to the LaTeX name of the second parameter.
+- `output_indices = 1:number_of_variables(T)`: Indices of the compartments to plot, defaults to all compartments.
+- `linestyle = :solid`: Line style for the plot.
+- `colormap = Makie.wong_colors()`: Colormap for the plot.
+- `legend_position = (:right, :top)`: Position of the legend in the plot.
+- `labels = get_latex_name.(T, output_indices)`: Labels for the compartments, defaults to the LaTeX names of the compartments.
+- `fig = Figure()`: The figure to draw on, defaults to a new `Figure`.
+- `ax = Axis(fig[1, 1]; xlabel, ylabel)`: The axis to draw on, defaults to a new `Axis` with the specified labels.
 """
 function plot_compartments(
     data::SimulationResult{T};
     xlabel = get_xlabel(T),
     ylabel = get_ylabel(T),
+    output_indices = 1:number_of_variables(T),
+    linestyle = :solid,
+    colormap = Makie.wong_colors(),
+    legend_position = (:right, :top),
+    labels = get_latex_name.(T, output_indices),
+    fig = Figure(),
+    ax = Axis(fig[1, 1]; xlabel, ylabel),
 ) where {T <: AbstractEbmParams}
-    fig = Figure()
 
     # Unpack the data
-    params = data.params
-    ax = Axis(fig[1, 1]; xlabel, ylabel)
-    params = data.params
     solution = data.solution
 
     # Draw the compartments
-    n = number_of_variables(params)
     t = solution.t
-    for idx in 1:n
-        x = map(u -> u[idx], solution.u)
-        label = get_latex_name(params, idx)
-        lines!(ax, t, x; label = label)
+    for (idx, label) in zip(output_indices, labels)
+        x = get_compartment(solution.u, idx)
+        lines!(ax, t, x; label, linestyle, colormap = colormap)
     end
 
     # Finish the plot
-    axislegend(ax)
+    axislegend(ax; position = legend_position)
     resize_to_layout!(fig)
 
     return fig
@@ -56,9 +64,8 @@ This function uses the `simulate` function to obtain `SimulationResult` and then
 
 # Optional keyword arguments:
 - `solver`: The ODE solver to use (default is `Tsit5()`).
-- `xlabel`: Label for the x-axis (default is obtained from `get_xlabel(T)`).
-- `ylabel`: Label for the y-axis (default is obtained from `get_ylabel(T)`).
 - `solver_options`: Additional options for the ODE solver (default is an empty `NamedTuple`).
+- `kwargs...`: Additional keyword arguments passed to `plot_compartments`.
 
 See also: `plot_compartments`, `SimulationResult`, `simulate`, `number_of_variables`, `get_xlabel`, `get_ylabel`.
 """
@@ -66,11 +73,10 @@ function plot_compartments(
     params::T,
     u0::AbstractVector = ones(number_of_variables(T)),
     tspan = (0, 500.0);
-    solver = Tsit5(),
-    xlabel = get_xlabel(T),
-    ylabel = get_ylabel(T),
-    solver_options = NamedTuple(),
+    solver = get_default_solver(T),
+    solver_options = get_default_solver_options(T),
+    kwargs...,
 ) where {T <: AbstractEbmParams}
     result = simulate(params, u0, tspan; solver, solver_options)
-    return plot_compartments(result; xlabel, ylabel)
+    return plot_compartments(result; kwargs...)
 end

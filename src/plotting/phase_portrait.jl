@@ -53,8 +53,8 @@ function plot_phase_portrait(
     # Unpack data
     params = data.params
     solutions = data.solutions
-    xindex, xvalues = data.change_x
-    yindex, yvalues = data.change_y
+    xindex, _ = data.change_x
+    yindex, _ = data.change_y
 
     # Collect orbits' xs and ys
     xs = Vector{Float64}[]
@@ -62,9 +62,8 @@ function plot_phase_portrait(
     sizehint!(xs, length(solutions))
     sizehint!(ys, length(solutions))
     for solution in solutions
-        u = solution.u
-        push!(xs, map(u -> u[xindex], u))
-        push!(ys, map(u -> u[yindex], u))
+        push!(xs, get_compartment(solution.u, xindex))
+        push!(ys, get_compartment(solution.u, yindex))
     end
 
     # Get information from the model
@@ -75,10 +74,9 @@ function plot_phase_portrait(
     ax = Axis(fig[1, 1]; xlabel = xlabel, ylabel = ylabel)
 
     # Plot the orbits
-    for solution in solutions
-        u = solution.u
-        x = map(u -> u[xindex], u)
-        y = map(u -> u[yindex], u)
+    for i in eachindex(solutions)
+        x = xs[i]
+        y = ys[i]
 
         # Plot the orbit
         lines!(
@@ -169,7 +167,8 @@ function plot_phase_portrait(
     xchange::Pair{Int, T1},
     ychange::Pair{Int, T2};
     tspan = (0, 500.0),
-    solver_options = NamedTuple(),
+    solver = get_default_solver(P),
+    solver_options = get_default_solver_options(P),
     kwargs...,
 ) where {P, T1, T2}
     data = run_phase_portrait_2d(
@@ -178,6 +177,7 @@ function plot_phase_portrait(
         xchange,
         ychange;
         tspan = tspan,
+        solver = solver,
         solver_options = solver_options,
     )
     return plot_phase_portrait(data; kwargs...)

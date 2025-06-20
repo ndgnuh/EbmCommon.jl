@@ -3,7 +3,7 @@ export PhasePortrait2d, run_phase_portrait_2d
 """
 Struct to hold data for 2D phase portrait.
 
-# Properties:
+# Properties
 
   - `params`: Model parameters
   - `u0`: Initial conditions vector
@@ -13,6 +13,7 @@ Struct to hold data for 2D phase portrait.
   - `solver_options`: Options for the numerical ODE solver
   - `xs`: x-coordinates of the solved orbits
   - `ys`: y-coordinates of the solved orbits
+  - `solver`: ODE solver used for the simulation
   - `solutions`: List of ODESolutions for each point in the grid
 
 See also: `run_phase_portrait_2d`.
@@ -24,6 +25,7 @@ See also: `run_phase_portrait_2d`.
     xchange::Pair{Int, T1}
     ychange::Pair{Int, T2}
     tspan::Any
+    solver::Any
     solver_options::Any
     # Results
     xs::Any
@@ -53,13 +55,14 @@ This function is just a wrapper for `DifferentialEquations`.
 See also: `PhasePortrait2d`, `DifferentialEquations.solve`.
 """
 function run_phase_portrait_2d(
-    params::AbstractEbmParams,
+    params::T,
     u0::AbstractVector,
     xchange::Pair{Int, ChangeX},
     ychange::Pair{Int, ChangeY};
     tspan = (0, 500.0),
-    solver_options = NamedTuple(),
-) where {ChangeX, ChangeY}
+    solver = get_default_solver(T),
+    solver_options = get_default_solver_options(T),
+) where {T, ChangeX, ChangeY}
 
     # Grid where extrema rules
     xind, xvals = xchange
@@ -80,7 +83,7 @@ function run_phase_portrait_2d(
         u0_ = copy(u0)
         u0_[xind] = x
         u0_[yind] = y
-        _simulate(params, u0_, tspan; solver_options...)
+        _simulate(params, u0_, tspan; solver, solver_options)
     end
 
     return PhasePortrait2d(;
@@ -92,6 +95,7 @@ function run_phase_portrait_2d(
         ys,
         solutions,
         tspan,
+        solver,
         solver_options,
     )
 end

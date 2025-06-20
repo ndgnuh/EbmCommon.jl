@@ -129,6 +129,13 @@ get_latex_name(T::TEP, ::Integer) = begin
 end
 
 """
+Returns composite variable name in LaTeX format.
+"""
+get_latex_name(T::TEP, ::Tuple) = begin
+    error("get_latex_name not implemented for $T")
+end
+
+"""
 Get latex name for the parameter or variable.
 
 Delegates from `get_latex_name(params::AbstractEbmParams, ...)`
@@ -179,11 +186,31 @@ See `DifferentialEquations` package documentation for more detail.
 
 See also: `EvolutionRule`, `ODEProblem`, `DifferentialEquations.solve`.
 """
-function _simulate(params::T, u0::AbstractVector, tspan; solver_options...) where {T}
+function _simulate(
+    params::T,
+    u0::AbstractVector,
+    tspan;
+    solver = Tsit5(),
+    solver_options = NamedTuple(),
+) where {T}
     rule = EvolutionRule(T)
     prob = ODEProblem(rule, u0, tspan, params)
-    solve(prob, Tsit5(); solver_options...)
+    solve(prob, solver; solver_options...)
 end
+
+"""
+$(TYPEDSIGNATURES)
+Get default solver options for the model. Helps to set the default.
+Default is an empty `NamedTuple`.
+"""
+get_default_solver_options(::TEP) = NamedTuple()
+
+"""
+$(TYPEDSIGNATURES)
+Get default solver for the model. Helps to set the default.
+Default is `Tsit5()`.
+"""
+get_default_solver(::TEP) = Tsit5()
 
 """
 Collect parameter to a dictionary of Symbol => T.
@@ -207,6 +234,25 @@ function Base.show(io::IO, params::T) where {T <: AbstractEbmParams}
     output = "$T\n$(join(lines, '\n'))"
     print(io, output)
 end
+
+"""
+$(TYPEDSIGNATURES)
+Colect a component of the simulation output over time.
+"""
+get_compartment(u, i::Integer) = map(u -> u[i], u)
+
+"""
+$(TYPEDSIGNATURES)
+Collect multiple components of the simulation output over time, the output component
+is the sum of the components at each time step.
+"""
+get_compartment(u, indices) = map(u -> sum(u[i] for i in indices), u)
+
+"""
+$(TYPEDSIGNATURES)
+Convenience function to get a compartment from the `ODESolution`.
+"""
+get_compartment(sol::ODESolution, i) = get_compartment(sol.u, i)
 
 include("simulate.jl")
 include("bifurcation-1d.jl")
@@ -264,8 +310,8 @@ Optional changes can be passed to the function that `ParamsUpdater` returns usin
 
 See also: `ParamsUpdater`.
 """
-function update_params(params, updates::ParameterChange...; kwargs...)
-    updater = ParamsUpdater(params)
+function update_params(params::P, updates::ParameterChange...; kwargs...) where {P}
+    updater = ParamsUpdater(P)
     return updater(params, updates...; kwargs...)
 end
 
@@ -318,6 +364,7 @@ function check_implemented_methods(::Type{T}) where {T}
         (number_of_equilibria, (Type{T},), (Type{AbstractEbmParams},)),
         (get_latex_name, (Type{T}, Symbol), (Type{AbstractEbmParams}, Symbol)),
         (get_latex_name, (Type{T}, Integer), (Type{AbstractEbmParams}, Integer)),
+        (get_latex_name, (Type{T}, Tuple), (Type{AbstractEbmParams}, Integer)),
         (get_equilibria, (T,), (AbstractEbmParams,)),
         (get_local_stabilities, (T,), (AbstractEbmParams,)),
     ]
@@ -366,7 +413,5 @@ function set_makie_theme!(; fontsize = 14)
     set_theme!(theme)
     return theme
 end
-
-public check_implemented_methods
 
 end # module EbmCommon
