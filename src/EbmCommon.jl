@@ -103,6 +103,13 @@ Returns variable name in LaTeX format.
 """
 get_latex_name(::Type{<:AbstractEbmParams}, ::Integer) = error("get_latex_name not implemented for $(typeof(AbstractEbmParams))")
 
+"""
+Get latex name for the parameter or variable.
+
+Wrapper for `get_latex_name(::Type{<:AbstractEbmParams}, name)`.
+"""
+get_latex_name(::AbstractEbmParams, name) = get_latex_name(typeof(A), name)
+
 "Get plotting x-axis label for the model."
 get_xlabel(::Type{<:AbstractEbmParams}) = "Time"
 
@@ -172,7 +179,7 @@ include("bifurcation-2d.jl")
 include("phase-2d.jl")
 include("recipes.jl")
 include("api-server.jl")
-include("macros.jl")
+include("plotting.jl")
 include("example.jl")
 
 """
@@ -211,9 +218,5 @@ function update_params(
     return updater(params, updates...; kwargs...)
 end
 
-import .Macros: @ebmspecs
-
-public @ebmspecs
-public AbstractEbmParams
 
 end # module EbmCommon
