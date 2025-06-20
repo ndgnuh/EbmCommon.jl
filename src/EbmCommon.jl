@@ -311,17 +311,18 @@ function check_implemented_methods(::Type{T}) where {T}
     methods_to_check = [
         (EvolutionRule, (Type{T},), (Type{AbstractEbmParams},)),
         (ParamsUpdater, (Type{T},), (Type{AbstractEbmParams},)),
-        (Jacobian, (Type{T}), (Type{AbstractEbmParams})),
+        (Jacobian, (Type{T},), (Type{AbstractEbmParams},)),
         (get_xlabel, (Type{T},), (Type{AbstractEbmParams},)),
         (get_ylabel, (Type{T},), (Type{AbstractEbmParams},)),
-        (get_latex_name, (Type{T}, Symbol), (Type{AbstractEbmParams}, Symbol)),
-        (get_latex_name, (Type{T}, Integer), (Type{AbstractEbmParams}, Integer)),
         (number_of_variables, (Type{T},), (Type{AbstractEbmParams},)),
         (number_of_equilibria, (Type{T},), (Type{AbstractEbmParams},)),
+        (get_latex_name, (Type{T}, Symbol), (Type{AbstractEbmParams}, Symbol)),
+        (get_latex_name, (Type{T}, Integer), (Type{AbstractEbmParams}, Integer)),
         (get_equilibria, (T,), (AbstractEbmParams,)),
         (get_local_stabilities, (T,), (AbstractEbmParams,)),
     ]
     for (method, sig_impl, sig_abs) in methods_to_check
+        #= @info sig_impl, sig_abs =#
         if !_has_implemented_method(method, sig_impl, sig_abs)
             @error "Method $(method) is not implemented for $T"
         end
