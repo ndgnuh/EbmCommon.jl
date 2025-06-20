@@ -321,13 +321,16 @@ function check_implemented_methods(::Type{T}) where {T}
         (get_equilibria, (T,), (AbstractEbmParams,)),
         (get_local_stabilities, (T,), (AbstractEbmParams,)),
     ]
+
+    ok = true
     for (method, sig_impl, sig_abs) in methods_to_check
         if !_has_implemented_method(method, sig_impl, sig_abs)
             @error "Method $(method) is not implemented for $T"
+            ok = false
         end
     end
 
-    return true
+    return ok
 end
 
 public check_implemented_methods
