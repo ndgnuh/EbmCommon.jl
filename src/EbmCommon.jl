@@ -167,7 +167,7 @@ function get_equilibria(params::T)::Vector where {T <: AbstractEbmParams}
 end
 
 const FloatType = Float64
-const ParameterChange = Pair{Symbol, T} where {T <: AbstractArray}
+const ParameterChange = Pair{Symbol, T} where {T}
 
 """
 Simulate the model, the parameters must have an evolution
