@@ -93,6 +93,22 @@ function get_local_stabilities end
     get_model_specifications(::AbstractEbmParams)
 end
 
+"""
+Returns parameter/variable name in LaTeX format.
+"""
+get_latex_name(::Type{<:AbstractEbmParams}, ::Symbol) = error("get_latex_name not implemented for $(typeof(AbstractEbmParams))")
+
+"""
+Returns variable name in LaTeX format.
+"""
+get_latex_name(::Type{<:AbstractEbmParams}, ::Integer) = error("get_latex_name not implemented for $(typeof(AbstractEbmParams))")
+
+"Get plotting x-axis label for the model."
+get_xlabel(::Type{<:AbstractEbmParams}) = "Time"
+
+"Get plotting y-axis label for the model."
+get_ylabel(::Type{<:AbstractEbmParams}) = "Density"
+
 
 """
 Return a map of information, indexed by parameters.
@@ -158,6 +174,42 @@ include("recipes.jl")
 include("api-server.jl")
 include("macros.jl")
 include("example.jl")
+
+"""
+    check_routh_hurwitz(a0, a1, a2, a3, ...)
+
+Check Routh-hurwitz stability for polynomial of order 1, 2, 3 and 4.
+"""
+function check_routh_hurwitz(a01234...)
+    cond = all(a01234 .> 0)
+    n = length(a01234)
+    if n > 3
+        a0, a1, a2, a3 = a01234
+        cond &= a2 * a1 - a0 * a3 > 0
+    end
+    if n > 4
+        a0, a1, a2, a3, a4 = a01234
+        cond &= a3 * a2 * a1 - a4 * a1^2 - a3^2 * a0 > 0
+    end
+    if n > 5
+        @error "Unsupported"
+    end
+    return cond
+end
+
+"""
+    update_params(params::AbstractEbmParams, updates::Vector{ParameterChange}...; kwargs...)
+
+Convenience function to update parameters of the model. The model must implement `ParamsUpdater` interface.
+"""
+function update_params(
+    params::AbstractEbmParams,
+    updates::Vector{ParameterChange}...;
+    kwargs...
+)
+    updater = ParamsUpdater(params)
+    return updater(params, updates...; kwargs...)
+end
 
 import .Macros: @ebmspecs
 
