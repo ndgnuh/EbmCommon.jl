@@ -179,8 +179,8 @@ See `DifferentialEquations` package documentation for more detail.
 
 See also: `EvolutionRule`, `ODEProblem`, `DifferentialEquations.solve`.
 """
-function _simulate(params::AbstractEbmParams, u0::AbstractVector, tspan; solver_options...)
-    rule = EvolutionRule(params)
+function _simulate(params::T, u0::AbstractVector, tspan; solver_options...) where {T}
+    rule = EvolutionRule(T)
     prob = ODEProblem(rule, u0, tspan, params)
     solve(prob, Tsit5(); solver_options...)
 end
