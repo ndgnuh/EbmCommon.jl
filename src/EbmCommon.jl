@@ -264,7 +264,7 @@ Optional changes can be passed to the function that `ParamsUpdater` returns usin
 
 See also: `ParamsUpdater`.
 """
-function update_params(params, updates::Vector{ParameterChange}...; kwargs...)
+function update_params(params, updates::ParameterChange...; kwargs...)
     updater = ParamsUpdater(params)
     return updater(params, updates...; kwargs...)
 end
@@ -331,6 +331,40 @@ function check_implemented_methods(::Type{T}) where {T}
     end
 
     return ok
+end
+
+"""
+$(SIGNATURES)
+
+Set default theme for Makie.
+"""
+function set_makie_theme!(; fontsize = 14)
+    theme = Theme(;
+        figure_padding = 2,
+        fontsize = fontsize,
+        markersize = 7,
+        CairoMakie = (antialias = :best, pt_per_unit = 2.0, px_per_unit = 2.0),
+        Axis = (
+            xticks = WilkinsonTicks(7; k_min = 5, k_max = 11),
+            yticks = WilkinsonTicks(7; k_min = 5, k_max = 11),
+            width = 600,
+            height = 300,
+            # aspect=21.0 / 9,
+            pallete = Makie.wong_colors(),
+        ),
+        Axis3 = (
+            xticks = WilkinsonTicks(7; k_min = 5, k_max = 11),
+            yticks = WilkinsonTicks(7; k_min = 5, k_max = 11),
+            width = 485,
+            height = 300,
+            pallete = Makie.wong_colors(),
+        ),
+        Lines = (linewidth = 2.5, linestyle = :solid),
+    )
+
+    theme = merge(theme, Makie.theme_latexfonts())
+    set_theme!(theme)
+    return theme
 end
 
 public check_implemented_methods
