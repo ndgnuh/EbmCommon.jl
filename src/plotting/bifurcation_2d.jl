@@ -66,8 +66,8 @@ function plot_bifurcation_2d(
     update_options = NamedTuple(),
     horizontal_legend = false,
     colormap = Makie.wong_colors(),
-    xlabel = get_latex_name(T, update_x[1]),
-    ylabel = get_latex_name(T, update_y[1]),
+    xlabel = get_latex_name(P, update_x[1]),
+    ylabel = get_latex_name(P, update_y[1]),
 ) where {P, T1, T2}
     # Run the bifurcation analysis
     data = run_bifurcation_2d(base_params, update_x, update_y, update_options)

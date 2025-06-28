@@ -18,12 +18,12 @@ Struct to hold data for 2D phase portrait.
 
 See also: `run_phase_portrait_2d`.
 """
-@kwdef struct PhasePortrait2d{P <: AbstractEbmParams, T1, T2}
+@kwdef struct PhasePortrait2d{P <: AbstractEbmParams}
     # Input
     params::P
     u0::Vector
-    xchange::Pair{Int, T1}
-    ychange::Pair{Int, T2}
+    xchange::Pair
+    ychange::Pair
     tspan::Any
     solver::Any
     solver_options::Any

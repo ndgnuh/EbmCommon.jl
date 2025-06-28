@@ -17,7 +17,7 @@ Plots the phase portrait of a 2D system. Returns a `Figure` object containing th
 - `show_start_marker`: Whether to show the start marker for each orbit, default is `true`.
 - `show_stop_marker`: Whether to show the stop marker for each orbit, default is `true`.
 - `show_limit_cycle`: Whether to show the limit cycle orbit, default is `false`, only applies if the simulation contains limit cycle.
-- `marker_size`: Common size for markers, default is `2`.
+- `marker_size`: Common size for markers, default is `10`.
 - `start_marker_size`: Size of the start marker, default is `marker_size`.
 - `start_marker_color`: Color of the start marker, default is `:blue`.
 - `stop_marker_size`: Size of the stop marker, default is `marker_size`.
@@ -38,7 +38,7 @@ function plot_phase_portrait(
     show_start_marker::Bool = true,
     show_stop_marker::Bool = true,
     show_limit_cycle = false,
-    marker_size = 2,
+    marker_size = 10,
     start_marker_size = marker_size,
     start_marker_color = :blue,
     stop_marker_size = marker_size,
@@ -47,14 +47,16 @@ function plot_phase_portrait(
     limit_cycle_linestyle = :solid,
     limit_cycle_color = :red,
     limit_cycle_start::Real = 0.2,
+    xindex = data.xchange[1],
+    yindex = data.ychange[1],
+    xlabel = get_latex_name(T, xindex),
+    ylabel = get_latex_name(T, yindex),
+    fig = Figure(),
+    ax = Axis(fig[1, 1]; xlabel, ylabel),
 ) where {T}
-    fig = Figure()
 
     # Unpack data
-    params = data.params
     solutions = data.solutions
-    xindex, _ = data.change_x
-    yindex, _ = data.change_y
 
     # Collect orbits' xs and ys
     xs = Vector{Float64}[]
@@ -65,13 +67,6 @@ function plot_phase_portrait(
         push!(xs, get_compartment(solution.u, xindex))
         push!(ys, get_compartment(solution.u, yindex))
     end
-
-    # Get information from the model
-    xlabel = get_latex_name(params, xindex)
-    ylabel = get_latex_name(params, yindex)
-
-    # Create the axis to draw
-    ax = Axis(fig[1, 1]; xlabel = xlabel, ylabel = ylabel)
 
     # Plot the orbits
     for i in eachindex(solutions)
@@ -144,7 +139,6 @@ function plot_phase_portrait(
     end
 
     # Finish the figure layout
-    axislegend(ax)
     resize_to_layout!(fig)
     return fig
 end

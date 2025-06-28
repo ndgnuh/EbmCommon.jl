@@ -71,12 +71,12 @@ See also: `plot_compartments`, `SimulationResult`, `simulate`, `number_of_variab
 """
 function plot_compartments(
     params::T,
-    u0::AbstractVector = ones(number_of_variables(T)),
-    tspan = (0, 500.0);
+    u0::AbstractVector = ones(number_of_variables(T));
+    tspan = (0, 500.0),
     solver = get_default_solver(T),
     solver_options = get_default_solver_options(T),
     kwargs...,
-) where {T <: AbstractEbmParams}
+) where {T}
     result = simulate(params, u0, tspan; solver, solver_options)
     return plot_compartments(result; kwargs...)
 end

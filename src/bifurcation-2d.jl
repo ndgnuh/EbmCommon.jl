@@ -21,8 +21,8 @@ struct StabilityEncoder{T <: Unsigned}
         @assert num_equilibria <= max_equilibiria
         return new{T}(num_equilibria)
     end
-    function StabilityEncoder(p::AbstractEbmParams)
-        n_equilibria = number_of_equilibria(p)
+    function StabilityEncoder(::P) where {P <: AbstractEbmParams}
+        n_equilibria = number_of_equilibria(P)
         ns = [8, 16, 32, 64, 128]
         Ts = [UInt8, UInt16, UInt32, UInt64, UInt128]
         for (n, T) in zip(ns, Ts)

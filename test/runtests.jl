@@ -1,8 +1,22 @@
 using EbmCommon
 using EbmCommon.Examples
-using EbmCommon: ModelSpecs, @generate_model_params
+using EbmCommon: ModelSpecs, @ebmspecs
 using EbmCommon.Api: run_api
 using CairoMakie
+
+#= display(@macroexpand @ebmspecs begin =#
+#= 	time_axis_name = "time" =#
+#= 	state_axis_name = "biomass" =#
+#= 	variables = [ =#
+#= 		x::Float64 = 0.9 description = "preys" latexname = "x"; =#
+#= 		y::Float64 = 0.2 desc = "predators"; =#
+#= 	] =#
+#= 	parameters = PredatorPreyParams[ =#
+#= 		α::Float64 = 1 description = "preys" latex = raw"\alpha"; =#
+#= 		β::Float64 = 1 description = "predators" latexname = raw"\beta"; =#
+#= 	] =#
+#= end =#
+#= ) =#
 
 
 
@@ -57,6 +71,6 @@ using CairoMakie
 #=     save("test.pdf", fig) =#
 #= end =#
 
-let params = Examples.PredatorPreyParams()
-    run_api(params)
-end
+# let params = Examples.PredatorPreyParams()
+#     run_api(params)
+# end
