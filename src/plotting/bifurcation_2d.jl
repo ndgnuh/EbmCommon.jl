@@ -28,7 +28,7 @@ function plot_bifurcation_2d(
     se = StabilityEncoder(base_params)
 
     # Mapping to categorical heatmap
-    flags = convert.(UInt8, transpose(stability_map))
+    flags = convert.(UInt8, stability_map)
     cats = sort!(unique(flags))
     labels = [stability_flagname(se, flag) for flag in cats]
     colors = Makie.categorical_colors(colormap, length(cats))

@@ -12,7 +12,7 @@ using MakieCore
 using Makie
 using Makie.LaTeXStrings
 using UnPack
-import Oxygen
+using Compat: @compat, @__FUNCTION__
 
 """
 An interface for all EBM parameters.
@@ -156,6 +156,15 @@ Get plotting y-axis label for the model.
 get_ylabel(::Type{<:AbstractEbmParams}) = "Density"
 
 """
+Returns the characteristic polynomial's coefficients for
+the `i`-th equilibrium.
+"""
+function get_routh_hurwiz_coefficients(::T, i::Integer) where {T <: AbstractEbmParams}
+    throw("$T does not implement $(@__FUNCTION__)")
+end
+@compat public get_routh_hurwiz_coefficients
+
+"""
 $(TYPEDSIGNATURES)
 
 Returns a bit vector of local stabilities of the equilibria in the model.
@@ -191,7 +200,7 @@ function _simulate(
     u0::AbstractVector,
     tspan;
     solver = Tsit5(),
-    solver_options = NamedTuple(),
+    solver_options::NamedTuple = NamedTuple(),
 ) where {T}
     rule = EvolutionRule(T)
     prob = ODEProblem(rule, u0, tspan, params)
@@ -336,58 +345,13 @@ export simulate, update_params, check_routh_hurwitz, jacobian
 export plot_bifurcation_1d, plot_compartments, plot_phase_portrait
 
 """
-$(TYPEDSIGNATURES)
-
-Check if a method is implemented for a given type by
-checking if the method for the type is different from the
-default one for `AbstractEbmParams`.
-"""
-function _has_implemented_method(f, sig_impl, sig_base)::Bool
-    method_impl = methods(f, sig_impl)
-    method_abstract = methods(f, sig_base)
-    return method_impl != method_abstract
-end
-
-"""
-$(TYPEDSIGNATURES)
-
-Check if all required methods are implemented for a given type `T`.
-"""
-function check_implemented_methods(::Type{T}) where {T}
-    methods_to_check = [
-        (EvolutionRule, (Type{T},), (Type{AbstractEbmParams},)),
-        (ParamsUpdater, (Type{T},), (Type{AbstractEbmParams},)),
-        (Jacobian, (Type{T},), (Type{AbstractEbmParams},)),
-        (get_xlabel, (Type{T},), (Type{AbstractEbmParams},)),
-        (get_ylabel, (Type{T},), (Type{AbstractEbmParams},)),
-        (number_of_variables, (Type{T},), (Type{AbstractEbmParams},)),
-        (number_of_equilibria, (Type{T},), (Type{AbstractEbmParams},)),
-        (get_latex_name, (Type{T}, Symbol), (Type{AbstractEbmParams}, Symbol)),
-        (get_latex_name, (Type{T}, Integer), (Type{AbstractEbmParams}, Integer)),
-        (get_latex_name, (Type{T}, Tuple), (Type{AbstractEbmParams}, Integer)),
-        (get_equilibria, (T,), (AbstractEbmParams,)),
-        (get_local_stabilities, (T,), (AbstractEbmParams,)),
-    ]
-
-    ok = true
-    for (method, sig_impl, sig_abs) in methods_to_check
-        if !_has_implemented_method(method, sig_impl, sig_abs)
-            @error "Method $(method) is not implemented for $T"
-            ok = false
-        end
-    end
-
-    return ok
-end
-
-"""
 $(SIGNATURES)
 
 Set default theme for Makie.
 """
 function set_makie_theme!(; fontsize = 14)
     theme = Theme(;
-        figure_padding = 2,
+        figure_padding = 5,
         fontsize = fontsize,
         markersize = 7,
         CairoMakie = (antialias = :best, pt_per_unit = 2.0, px_per_unit = 2.0),
@@ -413,5 +377,33 @@ function set_makie_theme!(; fontsize = 14)
     set_theme!(theme)
     return theme
 end
+
+function string_api_methods(::Type{T}) where {T <: AbstractEbmParams}
+    return """
+    EvolutionRule(::Type{<:$T}) = todo()
+    ParamsUpdater(::Type{<:$T}) = todo()
+    Jacobian(::Type{<:$T}) = todo()
+    get_xlabel(::Type{<:$T}) = todo()
+    get_ylabel(::Type{<:$T}) = todo()
+    number_of_variables(::Type{<:$T}) = todo()
+    number_of_equilibria(::Type{<:$T}) = todo()
+    get_latex_name(::Type{<:$T}, Symbol) = todo()
+    get_latex_name(::Type{<:$T}, Integer) = todo()
+    get_latex_name(::Type{<:$T}, Tuple) = todo()
+    get_equilibria(<:$T) = todo()
+    get_local_stabilities(<:$T) = todo()
+    """
+end
+
+include("machine.jl")
+using .MachineCalculated
+
+# Lsp crash at public keyword, use @compat instead
+# it should help with julia-1.10 and below too.
+const machine = MachineCalculated
+@compat public machine
+
+# Ultilities for checking conditions, unit test, etc.
+include("checks.jl")
 
 end # module EbmCommon

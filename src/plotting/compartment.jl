@@ -36,9 +36,14 @@ function plot_compartments(
 
     # Draw the compartments
     t = solution.t
-    for (idx, label) in zip(output_indices, labels)
+    for (i, (idx, label)) in enumerate(zip(output_indices, labels))
+        linestyle_ = if linestyle isa AbstractVector
+            linestyle[i]
+        else
+            linestyle
+        end
         x = get_compartment(solution.u, idx)
-        lines!(ax, t, x; label, linestyle, colormap = colormap)
+        lines!(ax, t, x; label, linestyle = linestyle_, colormap = colormap)
     end
 
     # Finish the plot

@@ -10,7 +10,7 @@ Plots the phase portrait of a 2D system. Returns a `Figure` object containing th
 
 # Options
 
-- `orbit_color`: Color of the orbit lines, default is `:black`.
+- `orbit_color`: Color of the orbit lines, default is `:black`, a vector can be used to specify different colors for each orbit.
 - `orbit_alpha`: Transparency of the orbit lines, default is `0.5`.
 - `orbit_linewidth`: Width of the orbit lines, default is `2`.
 - `orbit_linestyle`: Style of the orbit lines (e.g., `:solid`, `:dash`), default is `:solid`.
@@ -73,15 +73,14 @@ function plot_phase_portrait(
         x = xs[i]
         y = ys[i]
 
+        color = if (orbit_color isa AbstractVector || orbit_color isa Tuple)
+            (orbit_color[i], orbit_alpha)
+        else
+            (orbit_color, orbit_alpha)
+        end
+
         # Plot the orbit
-        lines!(
-            ax,
-            x,
-            y;
-            color = (orbit_color, orbit_alpha),
-            linewidth = orbit_linewidth,
-            linestyle = orbit_linestyle,
-        )
+        lines!(ax, x, y; color, linewidth = orbit_linewidth, linestyle = orbit_linestyle)
     end
 
     # Plot the start marker
