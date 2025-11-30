@@ -17,7 +17,7 @@ using LinearAlgebra
 using Polynomials
 using Compat: @compat
 
-using ..EbmCommon: AbstractEbmParams, EvolutionRule
+import ..EbmCommon as Ebm
 
 @compat public jacobian, get_routh_hurwiz_coefficients
 
@@ -25,9 +25,8 @@ using ..EbmCommon: AbstractEbmParams, EvolutionRule
 $TYPEDSIGNATURES
 Calculates and returns jacobian at a single state using forward diff.
 """
-function jacobian(params::T, u::AbstractVector, t = 0.0) where {T <: AbstractEbmParams}
-    evolution_rule! = EvolutionRule(T)
-    f!(du, x) = evolution_rule!(du, x, params, t)
+function jacobian(params::T, u::AbstractVector, t = 0.0) where {T <: Ebm.AbstractEbmParams}
+    f!(du, x) = Ebm.evolve!(du, x, params, t)
     du = ones(length(u))
     return ReverseDiff.jacobian(f!, du, u)
 end
@@ -38,15 +37,15 @@ Calculate Routh-Hurwitz coefficients at a equilibrium.
 The jacobian is calculated using forward diff.
 """
 function get_routh_hurwiz_coefficients(
-    params::T,
-    E;
-    exclude_roots = Set{Float64}(),
-) where {T <: AbstractEbmParams}
+        params::T,
+        E;
+        exclude_roots = Set{Float64}(),
+    ) where {T <: Ebm.AbstractEbmParams}
     J = jacobian(params, E)
     lambdas = eigvals(J)
     ignored = [any(isapprox(λ, ig) for ig in exclude_roots) for λ in lambdas]
     polys = [Polynomial([-λ, 1]) for (skip, λ) in zip(ignored, lambdas) if !skip]
-    coeffs(polys |> prod)
+    return coeffs(polys |> prod)
 end
 
 end

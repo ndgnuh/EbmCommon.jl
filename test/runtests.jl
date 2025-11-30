@@ -1,76 +1,62 @@
+import EbmCommon as Ebm
+
+using Makie
+
 using EbmCommon
-using EbmCommon.Examples
-using EbmCommon: ModelSpecs, @ebmspecs
-using EbmCommon.Api: run_api
-using CairoMakie
+using Test
+using example: LkModel
+using RequiredInterfaces
+const RI = RequiredInterfaces
 
-#= display(@macroexpand @ebmspecs begin =#
-#= 	time_axis_name = "time" =#
-#= 	state_axis_name = "biomass" =#
-#= 	variables = [ =#
-#= 		x::Float64 = 0.9 description = "preys" latexname = "x"; =#
-#= 		y::Float64 = 0.2 desc = "predators"; =#
-#= 	] =#
-#= 	parameters = PredatorPreyParams[ =#
-#= 		α::Float64 = 1 description = "preys" latex = raw"\alpha"; =#
-#= 		β::Float64 = 1 description = "predators" latexname = raw"\beta"; =#
-#= 	] =#
-#= end =#
-#= ) =#
+let (ok, faults) = Ebm.check_implementation(LkModel)
+    @test ok
+end
 
+@testset "Simulation API" begin
+    model = LkModel()
+    display(model)
 
+    model = Ebm.update(model, :K => 100.0)
+    display(model)
 
-#= const params = Examples.PredatorPreyParams() =#
-#= show(collect(params)) =#
+    model = Ebm.update(model, :K => 120.0)
+    display(model)
 
-#= let params = Examples.PredatorPreyParams() =#
-#=     u0 = [1, 1] =#
-#=     tspan = (0, 100.0) =#
-#=     solution = EbmCommon.simulate(params, u0, tspan; dtmax=0.1) =#
-#= end =#
+    Ebm.simulate(; params = model)
+    @test true
 
-#= let params = Examples.PredatorPreyParams() =#
-#=     u0 = Float64[1, 1] =#
-#=     tspan = (0, 100.0) =#
-#=     data = EbmCommon.run_phase_portrait_2d( =#
-#=         params, u0, =#
-#=         1 => range(1, 5, 5), =#
-#=         2 => range(1, 5, 5), =#
-#=         tspan=(0, 100.0); =#
-#=         solver_options=(dtmax=0.2,), =#
-#=     ) =#
+    Ebm.run_bifurcation_1d(
+        model;
+        param_updates = :γ => range(0.0001, 10, 100)
+    )
+    @test true
+
+    Ebm.run_phase_portrait_2d(
+        model;
+        x_updates = 1 => range(0.1, 10, 8),
+        y_updates = 1 => range(0.1, 10, 8),
+    )
+    @test true
+
+    Ebm.run_bifurcation_2d(
+        model;
+        x_updates = :β => range(0.01, 1, 100),
+        y_updates = :α => range(0.01, 1, 100),
+    )
+    @test true
+end
+
+#= @testset "Plotting" begin =#
+#=     model = LkModel() =#
+#=     Ebm.set_makie_theme!() =#
 #=  =#
-#=     fig = plot(data) =#
-#=     save("test.pdf", fig) =#
-#= end =#
-
-# let params = Examples.PredatorPreyParams()
-#     u0 = Float64[1, 1]
-#     tspan = (0, 100.0)
-#     data = EbmCommon.run_bifurcation_1d(
-#         params, u0,
-#         :δ => range(0, 2, 100),
-#         solver_options=(dtmax=0.2,),
-#     )
-#     fig = plot(data)
-# 
-#     save("test.pdf", fig)
-# end
-
-#= let params = Examples.PredatorPreyParams() =#
-#=     u0 = Float64[1, 1] =#
-#=     tspan = (0, 100.0) =#
-#=     data = EbmCommon.bifurcation_2d( =#
-#=         params, =#
-#=         :δ => range(0, 1, 900), =#
-#=         :β => range(0, 1, 450), =#
-#=     ) =#
-#=     EbmCommon.set_makie_theme!() =#
-#=     fig = plot(data) =#
+#=     result = Ebm.simulate(; params = model) =#
+#=     Ebm.plot_compartments(result; output_indices = 1) =#
+#=     Ebm.plot_compartments(model; u0 = [1.0, 2.0], output_indices = 2) =#
+#=     @test true =#
 #=  =#
-#=     save("test.pdf", fig) =#
+#=     result = Ebm.run_phase_portrait_2d(; params = model) =#
+#=     Ebm.plot_phase_portrait(result; output_indices = 1) =#
+#=     Ebm.plot_phase_portrait(model; u0 = [1.0, 2.0], output_indices = 2) =#
+#=     @test true =#
 #= end =#
-
-# let params = Examples.PredatorPreyParams()
-#     run_api(params)
-# end

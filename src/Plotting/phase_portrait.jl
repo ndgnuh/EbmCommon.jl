@@ -1,7 +1,5 @@
-export plot_phase_portrait
-
 """
-$(TYPEDSIGNATURES)
+$TYPEDSIGNATURES
 
 Plots the phase portrait of a 2D system. Returns a `Figure` object containing the phase portrait.
 
@@ -30,30 +28,30 @@ Plots the phase portrait of a 2D system. Returns a `Figure` object containing th
 See also: `PhasePortrait2d`, `run_phase_portrait_2d`.
 """
 function plot_phase_portrait(
-    data::PhasePortrait2d{T};
-    orbit_color = :black,
-    orbit_alpha = 0.5,
-    orbit_linewidth = 2.0,
-    orbit_linestyle = :solid,
-    show_start_marker::Bool = true,
-    show_stop_marker::Bool = true,
-    show_limit_cycle = false,
-    marker_size = 10,
-    start_marker_size = marker_size,
-    start_marker_color = :blue,
-    stop_marker_size = marker_size,
-    stop_marker_color = :red,
-    limit_cycle_linewidth = 2.0,
-    limit_cycle_linestyle = :solid,
-    limit_cycle_color = :red,
-    limit_cycle_start::Real = 0.2,
-    xindex = data.xchange[1],
-    yindex = data.ychange[1],
-    xlabel = get_latex_name(T, xindex),
-    ylabel = get_latex_name(T, yindex),
-    fig = Figure(),
-    ax = Axis(fig[1, 1]; xlabel, ylabel),
-) where {T}
+        data::PhasePortrait2d{T};
+        orbit_color = :black,
+        orbit_alpha = 0.5,
+        orbit_linewidth = 2.0,
+        orbit_linestyle = :solid,
+        show_start_marker::Bool = true,
+        show_stop_marker::Bool = true,
+        show_limit_cycle = false,
+        marker_size = 10,
+        start_marker_size = marker_size,
+        start_marker_color = :blue,
+        stop_marker_size = marker_size,
+        stop_marker_color = :red,
+        limit_cycle_linewidth = 2.0,
+        limit_cycle_linestyle = :solid,
+        limit_cycle_color = :red,
+        limit_cycle_start::Real = 0.2,
+        xindex = data.xchange[1],
+        yindex = data.ychange[1],
+        xlabel = get_latex_name(data.params, xindex),
+        ylabel = get_latex_name(data.params, yindex),
+        fig = Figure(),
+        ax = Axis(fig[1, 1]; xlabel, ylabel),
+    ) where {T}
 
     # Unpack data
     solutions = data.solutions
@@ -154,24 +152,12 @@ The keyword options `kwargs...` are passed to `plot_phase_portrait`.
 
 See also: `run_phase_portrait_2d`, `plot_phase_portrait`.
 """
-function plot_phase_portrait(
-    params::P,
-    u0::Vector,
-    xchange::Pair{Int, T1},
-    ychange::Pair{Int, T2};
-    tspan = (0, 500.0),
-    solver = get_default_solver(P),
-    solver_options = get_default_solver_options(P),
-    kwargs...,
-) where {P, T1, T2}
-    data = run_phase_portrait_2d(
-        params,
-        u0,
-        xchange,
-        ychange;
-        tspan = tspan,
-        solver = solver,
-        solver_options = solver_options,
+function plot_phase_portrait(params::P; kwargs...) where {P <: AbstractEbmParams}
+    config = construct_from_kwargs(
+        Ebm.PhasePortrait2dConfig;
+        params = params,
+        kwargs...
     )
+    data = run_phase_portrait_2d(config)
     return plot_phase_portrait(data; kwargs...)
 end

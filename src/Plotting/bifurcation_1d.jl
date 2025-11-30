@@ -11,15 +11,15 @@ The `kwargs` are passed to `plot_bifurcation_1d`.
 See also: `run_bifurcation_1d`, `BifurcationData1d`.
 """
 function plot_bifurcation_1d(
-    params::T,
-    u0::Vector,
-    change::Pair{Symbol};
-    tspan = (0.0, 1000.0),
-    change_options = NamedTuple(),
-    solver = get_default_solver(T),
-    solver_options = get_default_solver_options(T),
-    kwargs...,
-) where {T}
+        params::T,
+        u0::AbstractVector,
+        change::Pair{Symbol};
+        tspan = default_tspan(params),
+        change_options = NamedTuple(),
+        solver = get_default_solver(T),
+        solver_options = get_default_solver_options(T),
+        kwargs...,
+    ) where {T}
     output = run_bifurcation_1d(
         params,
         u0,
@@ -29,7 +29,7 @@ function plot_bifurcation_1d(
         solver = solver,
         solver_options = solver_options,
     )
-    plot_bifurcation_1d(output; kwargs...)
+    return plot_bifurcation_1d(output; kwargs...)
 end
 
 """
@@ -54,16 +54,16 @@ Plot the bifurcation diagram from `BifurcationData1d`.
 - `markersize=2`: Size of the markers in the plot.
 """
 function plot_bifurcation_1d(
-    data::Bifurcation1d{Params};
-    output_indices = [1],
-    output_labels = [get_latex_name(Params, i) for i in output_indices],
-    xlabel = get_latex_name(Params, first(data.change)),
-    ylabel = get_ylabel(Params),
-    cutoff_at_the_end::Real = 0.2,
-    baseline_color = :red,
-    baseline_linewidth = 1,
-    markersize = 3,
-) where {Params}
+        data::Bifurcation1d{Params};
+        output_indices = [1],
+        output_labels = [get_latex_name(Params, i) for i in output_indices],
+        xlabel = get_latex_name(Params, first(data.change)),
+        ylabel = get_ylabel(Params),
+        cutoff_at_the_end::Real = 0.2,
+        baseline_color = :red,
+        baseline_linewidth = 1,
+        markersize = 3,
+    ) where {Params}
     # Unpack
     solutions = data.solutions
     change = data.change
@@ -116,4 +116,25 @@ function plot_bifurcation_1d(
     axislegend(ax)
 
     return fig
+end
+
+function plot_bifurcation_1d(;
+        params::T,
+        change::Pair{Symbol},
+        u0::Vector = default_u0(params),
+        tspan = default_tspan(params),
+        change_options = NamedTuple(),
+        solver = get_default_solver(T),
+        solver_options = get_default_solver_options(T),
+    ) where {T <: AbstractEbmParams}
+    return plot_bifurcation_1d(
+        params::T,
+        u0::Vector,
+        change::Pair{Symbol};
+        tspan = (0.0, 1000.0),
+        change_options = NamedTuple(),
+        solver = get_default_solver(T),
+        solver_options = get_default_solver_options(T),
+        kwargs...,
+    )
 end

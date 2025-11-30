@@ -1,5 +1,3 @@
-export plot_bifurcation_2d
-
 """
 $(TYPEDSIGNATURES)
 
@@ -14,18 +12,18 @@ Plot the local stability of a 2D "bifurcation" analysis.
 - `ylabel = get_latex_name(T, data.update_y[1])`: Label for the y-axis, defaults to the LaTeX name of the second parameter.
 """
 function plot_bifurcation_2d(
-    data::Bifurcation2d{T};
-    horizontal_legend = false,
-    colormap = Makie.wong_colors(),
-    xlabel = get_latex_name(T, data.update_x[1]),
-    ylabel = get_latex_name(T, data.update_y[1]),
-) where {T}
+        data::Ebm.Bifurcation2d{T};
+        horizontal_legend = false,
+        colormap = Makie.wong_colors(),
+        xlabel = get_latex_name(T, data.update_x[1]),
+        ylabel = get_latex_name(T, data.update_y[1]),
+    ) where {T}
     # Unpack arguments
     base_params = data.base_params
     stability_map = data.stability_map
     xvalues = data.xvalues
     yvalues = data.yvalues
-    se = StabilityEncoder(base_params)
+    se = Ebm.StabilityEncoder(base_params)
 
     # Mapping to categorical heatmap
     flags = convert.(UInt8, stability_map)
@@ -60,18 +58,45 @@ additional options for plotting used by `plot_bifurcation_2d`.
 See also: `run_bifurcation_2d`, `plot_bifurcation_2d`.
 """
 function plot_bifurcation_2d(
-    base_params::P,
-    update_x::Pair{Symbol, T1},
-    update_y::Pair{Symbol, T2};
-    update_options = NamedTuple(),
-    horizontal_legend = false,
-    colormap = Makie.wong_colors(),
-    xlabel = get_latex_name(P, update_x[1]),
-    ylabel = get_latex_name(P, update_y[1]),
-) where {P, T1, T2}
+        base_params::P,
+        update_x::Pair{Symbol, T1},
+        update_y::Pair{Symbol, T2};
+        update_options = NamedTuple(),
+        horizontal_legend = false,
+        colormap = Makie.wong_colors(),
+        xlabel = get_latex_name(P, update_x[1]),
+        ylabel = get_latex_name(P, update_y[1]),
+    ) where {P, T1, T2}
     # Run the bifurcation analysis
     data = run_bifurcation_2d(base_params, update_x, update_y, update_options)
 
     # Plot the results
     return plot_bifurcation_2d(data; horizontal_legend, colormap, xlabel, ylabel)
+end
+
+"""
+Returns a LaTeX string with the names of the equilibria depending on the stability flag.
+
+# Parameters
+
+  - `se::StabilityEncoder{T}`: Stability encoder that contains the number of equilibria.
+  - `flag::T`: Stability flag, an unsigned integer where each bit represents the stability of an equilibrium.
+"""
+function stability_flagname(se::Ebm.StabilityEncoder{T}, flag::T) where {T <: Unsigned}
+    baseflag = one(flag)
+    n = se.num_equilibria
+    stabily_names = String[]
+    sizehint!(stabily_names, n)
+    for k in 1:n
+        if (flag & baseflag) != 0
+            push!(stabily_names, "E_$k")
+        end
+        baseflag = baseflag << 1
+    end
+    name = join(stabily_names, ", ")
+    if isempty(name)
+        return L"\varnothing"
+    else
+        return Makie.LaTeXString(name)
+    end
 end

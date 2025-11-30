@@ -1,0 +1,16 @@
+name = "example"
+uuid = "0f5eacca-0c09-4f17-9dbc-4081c48de444"
+version = "0.1.0"
+authors = ["Hung Nguyen Duc <ndgnuh@protonmail.com>"]
+
+[deps]
+EbmCommon = "f104a7c3-3688-4e7c-9c13-313faccad043"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+
+[sources]
+EbmCommon = {path = ".."}
+
+[compat]
+StaticArrays = "1.9.15"
+UnPack = "1.0.2"
