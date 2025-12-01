@@ -15,15 +15,15 @@ function plot_bifurcation_2d(
         data::Ebm.Bifurcation2d{T};
         horizontal_legend = false,
         colormap = Makie.wong_colors(),
-        xlabel = get_latex_name(T, data.update_x[1]),
-        ylabel = get_latex_name(T, data.update_y[1]),
+        xlabel = get_latex_name(data.config.params, data.config.x_updates[1]),
+        ylabel = get_latex_name(data.config.params, data.config.y_updates[1]),
     ) where {T}
     # Unpack arguments
-    base_params = data.base_params
-    stability_map = data.stability_map
-    xvalues = data.xvalues
-    yvalues = data.yvalues
-    se = Ebm.StabilityEncoder(base_params)
+    base_params = data.config.params
+    stability_map = data.stabilities
+    xvalues = data.config.x_updates[end]
+    yvalues = data.config.y_updates[end]
+    se = StabilityEncoder(base_params)
 
     # Mapping to categorical heatmap
     flags = convert.(UInt8, stability_map)
@@ -82,7 +82,7 @@ Returns a LaTeX string with the names of the equilibria depending on the stabili
   - `se::StabilityEncoder{T}`: Stability encoder that contains the number of equilibria.
   - `flag::T`: Stability flag, an unsigned integer where each bit represents the stability of an equilibrium.
 """
-function stability_flagname(se::Ebm.StabilityEncoder{T}, flag::T) where {T <: Unsigned}
+function stability_flagname(se::StabilityEncoder{T}, flag::T) where {T <: Unsigned}
     baseflag = one(flag)
     n = se.num_equilibria
     stabily_names = String[]

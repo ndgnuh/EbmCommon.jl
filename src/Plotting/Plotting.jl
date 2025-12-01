@@ -18,14 +18,15 @@ using Makie.LaTeXStrings
 
 include("compartment.jl")
 include("phase_portrait.jl")
-#= include("bifurcation_1d.jl") =#
-#= include("bifurcation_2d.jl") =#
+include("bifurcation_1d.jl")
+include("stability_encoding.jl")
+include("bifurcation_2d.jl")
 
 export set_makie_theme!
 export plot_compartments
-#= export plot_phase_portrait_2d =#
-#= export plot_bifurcation_1d =#
-#= export plot_bifurcation_2d =#
+export plot_phase_portrait
+export plot_bifurcation_1d
+export plot_bifurcation_2d
 
 """
 $SIGNATURES

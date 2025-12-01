@@ -14,10 +14,10 @@ function plot_bifurcation_1d(
         params::T,
         u0::AbstractVector,
         change::Pair{Symbol};
-        tspan = default_tspan(params),
+        tspan = Ebm.default_tspan(params),
         change_options = NamedTuple(),
-        solver = get_default_solver(T),
-        solver_options = get_default_solver_options(T),
+        solver = Ebm.get_default_solver(params),
+        solver_options = Ebm.default_solver_options(params),
         kwargs...,
     ) where {T}
     output = run_bifurcation_1d(
