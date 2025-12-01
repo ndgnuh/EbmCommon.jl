@@ -24,6 +24,7 @@ end
 
 Ebm.default_u0(::LkModel) = MVector(37.0, 14.0)
 Ebm.default_tspan(::LkModel) = (0.0, 400.0)
+Ebm.default_solver_options(::LkModel) = (; dtmax = 0.2)
 
 function Ebm.evolve!(du::AbstractVector, u::AbstractVector, model::LkModel, ::Real)::Nothing
     @unpack K, α, β, γ, δ = model
@@ -43,39 +44,23 @@ function Ebm.evolve(u::AbstractVector, model::LkModel, ::Real)::MVector
     return MVector(du1, du2)
 end
 
-# Specifications interfaces
-# =========================
-
-function get_latex_name(::LkModel, name::Symbol)
-    return Dict(
-        :K => "K",
-        :α => "α",
-        :β => "β",
-        :γ => "γ",
-        :δ => "δ",
-    )[name]
-end
-
 # Specifications related interfaces
 # =================================
-
-Ebm.number_of_variables(::LkModel) = 2
-Ebm.number_of_equilibria(::LkModel) = 3
 
 Ebm.get_xlabel(::LkModel) = "Time"
 Ebm.get_ylabel(::LkModel) = "Population density"
 
 Ebm.get_latex_name(::LkModel, name::Symbol) = Dict(
-    :α => "\\alpha",
-    :β => "\\beta",
-    :γ => "\\gamma",
-    :δ => "\\delta",
-    :K => "K",
+    :α => raw"$\alpha$",
+    :β => raw"$\beta$",
+    :γ => raw"$\gamma$",
+    :δ => raw"$\delta$",
+    :K => raw"$K$",
 )[name]
 
 Ebm.get_latex_name(::LkModel, name::Integer) = Dict(
-    1 => "x",
-    2 => "y"
+    1 => raw"$N$",
+    2 => raw"$P$"
 )[name]
 
 Ebm.get_latex_name(::LkModel, name::Tuple) = throw(

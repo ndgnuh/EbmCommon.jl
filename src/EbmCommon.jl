@@ -18,6 +18,7 @@ using Compat: @compat, @__FUNCTION__
 
 
 @compat public get_routh_hurwiz_coefficients
+export MVector, SVector
 export AbstractEbmParams
 export Bifurcation1d, PhasePortrait2d
 export simulate, update, check_routh_hurwitz, get_jacobian
