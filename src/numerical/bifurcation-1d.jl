@@ -48,7 +48,7 @@ function run_bifurcation_1d(config::Bifurcation1dConfig{T}) where {T}
     param_min = minimum(param_values)
     param_max = maximum(param_values)
     base_params = params
-    param_base = getfield(params, param_name)
+    param_base = getproperty(params, param_name)
 
     @assert param_min < param_base < param_max "Initial bifurcation parameter value $param_name = $param_base must be within bounds [$param_min, $param_max]."
 
