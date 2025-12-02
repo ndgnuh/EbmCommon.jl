@@ -2,9 +2,9 @@
 Construct an instance of type `T` from keyword arguments, ignoring any
 unexpected keywords.
 """
-function construct_from_kwargs(T::Type; kwargs...)
+function construct_from_kwargs(T::Type, args...; kwargs...)
     options = Dict(k => v for (k, v) in kwargs if k in fieldnames(T))
-    return T(; options...)
+    return T(args...; options...)
 end
 
 """

@@ -54,26 +54,30 @@ Plot the bifurcation diagram from `BifurcationData1d`.
 - `markersize=2`: Size of the markers in the plot.
 """
 function plot_bifurcation_1d(
-        data::Bifurcation1d{Params};
+        data::Bifurcation1d;
         output_indices = [1],
-        output_labels = [get_latex_name(Params, i) for i in output_indices],
-        xlabel = get_latex_name(Params, first(data.change)),
-        ylabel = get_ylabel(Params),
+        output_labels = Dict(
+            i => get_latex_name(
+                    data.config.simulation_config.params, i
+                ) for i in output_indices
+        ),
+        xlabel = get_latex_name(data.config.simulation_config.params, first(data.config.param_updates)),
+        ylabel = get_ylabel(data.config.simulation_config.params),
         cutoff_at_the_end::Real = 0.2,
         baseline_color = :red,
         baseline_linewidth = 1,
         markersize = 3,
-    ) where {Params}
+    )
     # Unpack
-    solutions = data.solutions
-    change = data.change
-    base_params = data.base_params
-    param_name, param_values = change
+    @unpack (updated_params, solutions, config, bifurcation_points) = data
+    @unpack (simulation_config, param_updates) = config
+    base_params = simulation_config.params
+    param_name, param_values = param_updates
     param_base_value = getproperty(base_params, param_name)
 
     # Transform simulation data to plotting data
     xs = Float64[]
-    yss = [Float64[] for _ in output_indices]
+    yss = Dict(i => Float64[] for i in output_indices)
     for (param_value, sol) in zip(param_values, solutions)
         # How many steps to cut off
         t = sol.t
@@ -98,19 +102,24 @@ function plot_bifurcation_1d(
     ax = Axis(fig[1, 1]; xlabel, ylabel)
 
     # Draw the fluctuations of output variables
-    for (i, ys) in enumerate(yss)
-        label = output_labels[output_indices[i]]
+    for i in output_indices
+        ys = yss[i]
+        label = output_labels[i]
         scatter!(ax, xs, ys; markersize = markersize, label = label)
     end
 
     # Draw the baseline of parameter value
-    ymin = minimum(minimum(ys) for ys in yss)
-    ymax = maximum(maximum(ys) for ys in yss)
-    lines!(
-        [(param_base_value, ymin), (param_base_value, ymax)];
-        color = baseline_color,
-        linewidth = baseline_linewidth,
-    )
+    ymin = minimum(minimum(ys) for (_, ys) in yss)
+    ymax = maximum(maximum(ys) for (_, ys) in yss)
+    for bp in bifurcation_points
+        type = bp.type
+        value = bp.param
+        lines!(
+            [(value, ymin), (value, ymax)];
+            color = baseline_color,
+            linewidth = baseline_linewidth,
+        )
+    end
 
     resize_to_layout!(fig)
     axislegend(ax)

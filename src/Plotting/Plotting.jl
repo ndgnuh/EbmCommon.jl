@@ -26,7 +26,7 @@ export set_makie_theme!
 export plot_compartments
 export plot_phase_portrait
 export plot_bifurcation_1d
-export plot_bifurcation_2d
+export plot_stability_diagram
 
 """
 $SIGNATURES
