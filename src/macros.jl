@@ -190,11 +190,17 @@ Expand the pseudo macro @everything to all the local variables keyword arguments
 """
 function expand_local_variables(expr, local_vars::Vector{Symbol})
     return MacroTools.postwalk(expr) do f
-        if @capture(f, @everything)
-            return Expr(:parameters, local_vars...)
-        else
-            return f
+        if f isa Expr && f.head == :parameters
+            new_args = mapreduce(vcat, f.args) do arg
+                if @capture(arg, @everything)
+                    local_vars
+                else
+                    [arg]
+                end
+            end
+            return Expr(:parameters, new_args...)
         end
+        return f
     end
 end
 
