@@ -206,7 +206,7 @@ function generate_constructor(specs::StructSpecs)
             else
                 # keyword in function arguments is
                 # not the equal node, it is :kw
-                push!(kwarg_exprs, Expr(:kw, name, 1))
+                push!(kwarg_exprs, Expr(:kw, name, default))
             end
         end
     end
