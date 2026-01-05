@@ -6,6 +6,7 @@ using DocStringExtensions
     type::S
     is_parametric::Bool
     formulation::T
+    hidden::Bool
 end
 
 """
@@ -41,7 +42,7 @@ function parse_struct(root::Expr; __module__)
         error("Expected a struct definition")
     end
 
-    is_mutable = root.args[1]
+    #= is_mutable = root.args[1] =#
     name_expr = root.args[2]
     pfields = ParameterField[]
 
@@ -76,12 +77,18 @@ function parse_struct(root::Expr; __module__)
             continue
         end
 
+        hidden = false
+        if @capture(field, @hide(macroexpr_))
+            hidden = true
+            field = macroexpr
+        end
         if @capture(field, fname_::ftype_ = fdefault_)
             pfield = ParameterField(;
                 name = fname,
                 type = handle_escape(ftype),
                 is_parametric = false,
                 formulation = handle_escape(fdefault),
+                hidden = hidden,
             )
             push!(pfields, pfield)
         elseif @capture(field, fname_::ftype_)
@@ -90,6 +97,7 @@ function parse_struct(root::Expr; __module__)
                 type = handle_escape(ftype),
                 is_parametric = false,
                 formulation = nothing,
+                hidden = hidden,
             )
             push!(pfields, pfield)
         elseif @capture(field, fname_ = fdefault_)
@@ -99,6 +107,7 @@ function parse_struct(root::Expr; __module__)
                 type = T,
                 is_parametric = true,
                 formulation = handle_escape(fdefault),
+                hidden = hidden,
             )
             push!(parametrics, T)
             push!(pfields, pfield)
@@ -109,6 +118,7 @@ function parse_struct(root::Expr; __module__)
                 type = T,
                 is_parametric = true,
                 formulation = nothing,
+                hidden = hidden,
             )
             push!(parametrics, T)
             push!(pfields, pfield)
@@ -246,8 +256,9 @@ function generate_print_override(specs)
     # Print the parameters
     # Breaks every i % 4 == 0
     push!(print_exprs, :(print($io, "\t")))
-    n = length(specs.fields)
-    for (i, field) in enumerate(specs.fields)
+    fields = [field for field in specs.fields if !field.hidden]
+    n = length(fields)
+    for (i, field) in enumerate(fields)
         field_name = field.name
         field_value_expr = :($obj.$field_name)
         field_type_expr = :(typeof($obj.$field_name))
