@@ -185,6 +185,19 @@ function generate_struct(specs::StructSpecs)
     )
 end
 
+"""
+Expand the pseudo macro @everything to all the local variables keyword arguments
+"""
+function expand_local_variables(expr, local_vars::Vector{Symbol})
+    return MacroTools.postwalk(expr) do f
+        if @capture(f, @everything)
+            return Expr(:parameters, local_vars...)
+        else
+            return f
+        end
+    end
+end
+
 function generate_constructor(specs::StructSpecs)
     name = specs.name
 
@@ -197,16 +210,20 @@ function generate_constructor(specs::StructSpecs)
     # Type parameters
     type_params_exprs = Expr[]
 
+
     # Collect keyword arguments and dependent expressions
     for field in specs.fields
         name = field.name
         formulation = field.formulation
-        push!(arg_exprs, name)
         if field.is_parametric
             push!(type_params_exprs, :(typeof($name)))
         end
         if formulation isa Expr || formulation isa Symbol
             # Calculation of dependent parameters
+            # Expand @everything to local variables that are available at this point
+            if formulation isa Expr
+                formulation = expand_local_variables(formulation, arg_exprs)
+            end
             push!(dep_exprs, :($name = $formulation))
         else
             # Free parameters
@@ -219,6 +236,11 @@ function generate_constructor(specs::StructSpecs)
                 push!(kwarg_exprs, Expr(:kw, name, default))
             end
         end
+
+        # Has to be after formulation expansion
+        # Otherwise the current symbol will be included in the expansion
+        # of @everything
+        push!(arg_exprs, name)
     end
 
     struct_name = specs.name
