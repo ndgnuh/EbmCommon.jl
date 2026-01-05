@@ -1,15 +1,15 @@
 using MacroTools
 using DocStringExtensions
 
-@kwdef struct ParameterField{T}
+@kwdef struct ParameterField{S, T}
     name::Symbol
-    type::Symbol
+    type::S
     is_parametric::Bool
     formulation::T
 end
 
 """
-$(TYPEDFIELDS)
+$TYPEDFIELDS
 
 Speficiation for a struct
 """
@@ -36,7 +36,7 @@ function make_type(
     )
 end
 
-function parse_struct(root::Expr)
+function parse_struct(root::Expr; __module__)
     if root.head != :struct
         error("Expected a struct definition")
     end
@@ -59,7 +59,17 @@ function parse_struct(root::Expr)
         error("Unrecognized struct definition $name_expr")
     end
 
+    function handle_escape(expr)
+        return MacroTools.postwalk(expr) do f
+            if f isa Expr && f.head == :$
+                escaped = f.args[1]
+                return __module__.eval(escaped)
+            end
+            return f
+        end
+    end
 
+    # Collect field names, types and defaults/formulations
     fields = root.args[end].args
     for field in fields
         if field isa LineNumberNode
@@ -69,15 +79,15 @@ function parse_struct(root::Expr)
         if @capture(field, fname_::ftype_ = fdefault_)
             pfield = ParameterField(;
                 name = fname,
-                type = ftype,
+                type = handle_escape(ftype),
                 is_parametric = false,
-                formulation = fdefault,
+                formulation = handle_escape(fdefault),
             )
             push!(pfields, pfield)
         elseif @capture(field, fname_::ftype_)
             pfield = ParameterField(;
                 name = fname,
-                type = ftype,
+                type = handle_escape(ftype),
                 is_parametric = false,
                 formulation = nothing,
             )
@@ -88,7 +98,7 @@ function parse_struct(root::Expr)
                 name = fname,
                 type = T,
                 is_parametric = true,
-                formulation = fdefault,
+                formulation = handle_escape(fdefault),
             )
             push!(parametrics, T)
             push!(pfields, pfield)
@@ -173,7 +183,6 @@ function generate_constructor(specs::StructSpecs)
     # Depentdent parameters
     dep_exprs = Expr[]
     # Argument for the default constructor
-    free_arg_exprs = Symbol[]
     arg_exprs = Symbol[]
     # Type parameters
     type_params_exprs = Expr[]
@@ -192,7 +201,6 @@ function generate_constructor(specs::StructSpecs)
         else
             # Free parameters
             default = field.formulation
-            push!(free_arg_exprs, name)
             if isnothing(default)
                 push!(kwarg_exprs, name)
             else
@@ -205,9 +213,11 @@ function generate_constructor(specs::StructSpecs)
 
     struct_name = specs.name
 
-    # Tradeoff to
+    # Keep args to make it compat to Accessors.jl
+    # Do not use free_arg_exprs here, it will mess up if the order
+    # of fields is changed. (e.g. free field after dependent field)
     args_constructor = :(
-        function $struct_name($(free_arg_exprs...), args...)
+        function $struct_name($(arg_exprs...))
             $(dep_exprs...)
             return new{$(type_params_exprs...)}($(arg_exprs...))
         end
@@ -268,7 +278,9 @@ Generate a struct that holds parameters.
 Each fields will be of parametric type.
 """
 macro params(expr)
-    specs = parse_struct(expr)
+    println(__module__)
+
+    specs = parse_struct(expr; __module__)
     struct_def = generate_struct(specs)
     print_def = generate_print_override(specs)
     return :($struct_def; $print_def)
