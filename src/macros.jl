@@ -1,282 +1,275 @@
-"""
-Macro module
-============
-
-Support this kind of syntax:
-
-```julia
-PredatorPreyParams = @ebmspecs begin
-	time_axis_name = "time"
-	state_axis_name = "biomass"
-	variables = [
-		x::Float64 = 0.9 description = "preys" latexname = "x";
-		y::Float64 = 0.2 desc = "predators";
-	]
-	parameters = PredatorPreyParams[
-		α::Float64 = 1 description = "preys" latex = raw"\alpha";
-		β::Float64 = 1 description = "predators" latexname = raw"\beta";
-	]
-end
-```
-
-Debugging tips
-==============
-
-- `Meta.@dump`
-- `Base.var"@macroname"`
-- `@macroexpand`
-"""
-module Macros
-
-import ..EbmCommon
-import ..EbmCommon: AbstractEbmParams
-import ..EbmCommon: VariableSpecs
-import ..EbmCommon: ParameterSpecs
-import ..EbmCommon: ModelSpecs
-import ..EbmCommon: get_model_specifications
-import ..EbmCommon: number_of_variables
 using MacroTools
+using DocStringExtensions
 
-function _variable_specs(expr)
-    @capture(expr, variables = variables_info_) || throw("No variable found")
-    @assert variables_info.head == :vcat "Malformed variable expressions"
-    # return variables_info
-    varspecs = map(variables_info.args |> enumerate) do (i, var_info)
-        # Varinfo is a Expr(:row, ...), 
-        # it can not becaptured by @capture macro
-        @assert var_info.head == :row "Malformed variable expression"
+@kwdef struct ParameterField{T}
+    name::Symbol
+    type::Symbol
+    is_parametric::Bool
+    formulation::T
+end
 
-        # Build a list of keyword arguments
-        specs = Expr[Expr(:kw, :index, i)]
-        for expr in var_info.args
-            if @capture(expr, (desc = desc_) | (description = desc_))
-                push!(specs, Expr(:kw, :description, desc))
-                continue
-            elseif @capture(expr, latexname = latex_)
-                push!(specs, Expr(:kw, :latexname, latex))
-                continue
-            elseif @capture(expr, varname_::T_ = vardefault_) || @capture(expr, varname_ = vardefault_)
-                push!(specs, Expr(:kw, :name, QuoteNode(varname)))
-                push!(specs, Expr(:kw, :default, vardefault))
-                continue
+"""
+$(TYPEDFIELDS)
+
+Speficiation for a struct
+"""
+@kwdef struct StructSpecs{T}
+    "Struct name"
+    name::Symbol
+    "Supertype of the struct, can be Symbol or Expr or Nothing"
+    supertype::T
+    "Fields of the struct"
+    fields::Vector{ParameterField}
+    "Parametric types used in the struct"
+    params::Vector{Symbol}
+end
+
+
+function is_free(pf::ParameterField)
+    return isnothing(pf.formulation)
+end
+
+function make_type(
+        name::Symbol,
+        free_fields::Vector{Symbol},
+        dependent_fields::Vector{Symbol},
+    )
+end
+
+function parse_struct(root::Expr)
+    if root.head != :struct
+        error("Expected a struct definition")
+    end
+
+    is_mutable = root.args[1]
+    name_expr = root.args[2]
+    pfields = ParameterField[]
+
+    # Parse struct name and supertype
+    struct_name, super_type, parametrics::Vector{Symbol} = if @capture(name_expr, name_{P__} <: super_)
+        (name, super, P)
+    elseif @capture(name_expr, name_{P__})
+        (name, nothing, P)
+    elseif @capture(name_expr, name_ <: super_)
+        (name, super, Symbol[])
+    elseif name_expr isa Symbol
+        (name_expr, nothing, Symbol[])
+    else
+        dump(name_expr)
+        error("Unrecognized struct definition $name_expr")
+    end
+
+
+    fields = root.args[end].args
+    for field in fields
+        if field isa LineNumberNode
+            continue
+        end
+
+        if @capture(field, fname_::ftype_ = fdefault_)
+            pfield = ParameterField(;
+                name = fname,
+                type = ftype,
+                is_parametric = false,
+                formulation = fdefault,
+            )
+            push!(pfields, pfield)
+        elseif @capture(field, fname_::ftype_)
+            pfield = ParameterField(;
+                name = fname,
+                type = ftype,
+                is_parametric = false,
+                formulation = nothing,
+            )
+            push!(pfields, pfield)
+        elseif @capture(field, fname_ = fdefault_)
+            T = gensym(:T)
+            pfield = ParameterField(;
+                name = fname,
+                type = T,
+                is_parametric = true,
+                formulation = fdefault,
+            )
+            push!(parametrics, T)
+            push!(pfields, pfield)
+        elseif field isa Symbol
+            T = gensym(:T)
+            pfield = ParameterField(;
+                name = field,
+                type = T,
+                is_parametric = true,
+                formulation = nothing,
+            )
+            push!(parametrics, T)
+            push!(pfields, pfield)
+        else
+            error("Unrecognized field format: $field")
+        end
+    end
+
+    specs = StructSpecs(;
+        name = struct_name,
+        supertype = super_type,
+        fields = pfields,
+        params = unique(parametrics),
+    )
+
+    validate_fields(specs)
+
+    return specs
+end
+
+"""
+Check struct specifications for:
+
+- Duplicate field names
+"""
+function validate_fields(specs::StructSpecs)
+    field_names = Set{Symbol}()
+    for field in specs.fields
+        if field.name in field_names
+            error("Duplicate field name: $(field.name)")
+        end
+        push!(field_names, field.name)
+    end
+    return
+end
+
+function generate_struct(specs::StructSpecs)
+    # Struct name expression
+    name = specs.name
+    params = specs.params
+    supertype = specs.supertype
+    structname = if isnothing(supertype)
+        :($name{$(params...)})
+    else
+        :($name{$(params...)} <: $(esc(supertype)))
+    end
+
+    # Fields expression
+    field_exprs = Expr[]
+    for field in specs.fields
+        field_name = field.name
+        field_type = field.type
+        field_expr = :($field_name::$field_type)
+        push!(field_exprs, field_expr)
+    end
+
+    # Struct expression, immutable by default
+    constructor_defs = generate_constructor(specs)
+    return :(
+        struct $(structname)
+            $(field_exprs...)
+            $(constructor_defs...)
+        end
+    )
+end
+
+function generate_constructor(specs::StructSpecs)
+    name = specs.name
+
+    # Function arguments
+    kwarg_exprs = Union{Symbol, Expr}[]
+    # Depentdent parameters
+    dep_exprs = Expr[]
+    # Argument for the default constructor
+    free_arg_exprs = Symbol[]
+    arg_exprs = Symbol[]
+    # Type parameters
+    type_params_exprs = Expr[]
+
+    # Collect keyword arguments and dependent expressions
+    for field in specs.fields
+        name = field.name
+        formulation = field.formulation
+        push!(arg_exprs, name)
+        if field.is_parametric
+            push!(type_params_exprs, :(typeof($name)))
+        end
+        if formulation isa Expr || formulation isa Symbol
+            # Calculation of dependent parameters
+            push!(dep_exprs, :($name = $formulation))
+        else
+            # Free parameters
+            default = field.formulation
+            push!(free_arg_exprs, name)
+            if isnothing(default)
+                push!(kwarg_exprs, name)
+            else
+                # keyword in function arguments is
+                # not the equal node, it is :kw
+                push!(kwarg_exprs, Expr(:kw, name, 1))
             end
         end
-
-        # Create function call
-        # The expression of function call looks something like
-        # (:call, :f, (:parameters, kw1, kw2, ...))
-        Expr(:call, :VariableSpecs, Expr(:parameters, specs...))
     end
 
-    # Make an array of variable specs
-    specs_expr = Expr(:vcat, varspecs...)
-    num_variables = length(varspecs)
-    specs_expr, num_variables
+    struct_name = specs.name
+
+    # Tradeoff to
+    args_constructor = :(
+        function $struct_name($(free_arg_exprs...), args...)
+            $(dep_exprs...)
+            return new{$(type_params_exprs...)}($(arg_exprs...))
+        end
+    )
+
+    kwargs_constructor = :(
+        function $(specs.name)(; $(kwarg_exprs...))
+            $(dep_exprs...)
+            return new{$(type_params_exprs...)}($(arg_exprs...))
+        end
+    )
+
+    return args_constructor, kwargs_constructor
 end
 
-macro _variable_specs(expr)
-    return _variable_specs(expr)[1]
-end
+function generate_print_override(specs)
+    struct_name = specs.name
+    print_exprs = Expr[]
+    obj = gensym()
+    io = gensym()
 
-@doc """
-A macro that turns this syntax into a vector of `VariableSpecs`.
+    # Print struct name
+    struct_name_expr = Expr(:string, "$struct_name:")
+    push!(print_exprs, :(println($io, $struct_name_expr)))
 
-```julia
-variables = [
-	x::Float64 = 0.9 description = "preys" latexname = "x";
-	y::Float64 = 0.2 desc = "predators";
-] 
-```
-"""
-_variable_specs, var"@_variable_specs"
-
-
-
-"Recursively convert dictionary to named tuple"
-rnamedtuple(d::AbstractDict) = (; (Symbol(k) => rnamedtuple(v) for (k, v) in d)...)
-rnamedtuple(arr::AbstractArray) = map(rnamedtuple, arr)
-rnamedtuple(v::Any) = v
-
-function _parameter_specs(expr)
-	@capture(expr, parameters = parameters_info_) || throw("No parameter found")
-	@assert parameters_info.head == :typed_vcat "Malformed parameter expressions"
-	
-	struct_name = parameters_info.args[1]
-	struct_rows = parameters_info.args[2:end]
-	
-	names = Symbol[]
-	types = Symbol[]
-	default_values = []
-	
-	# ParameterSpecs call
-	specs = map(struct_rows |> enumerate) do (i, var_info)
-		# Varinfo is a Expr(:row, ...), 
-		# it can not becaptured by @capture macro
-		@assert var_info.head == :row "Malformed parameter expression"
-
-		# Build a list of keyword arguments
-		specs = Expr[]
-		for expr in var_info.args
-			if @capture(expr, (desc = desc_) | (description = desc_))
-				push!(specs, Expr(:kw, :description, desc))
-				continue
-			elseif @capture(expr, (latexname = latex_) | (latex = latex_))
-				push!(specs, Expr(:kw, :latexname, latex))
-				continue
-			elseif @capture(expr, alias = alias_)
-				push!(specs, Expr(:kw, :alias, alias))
-				continue
-			elseif @capture(expr, varname_::T_ = vardefault_) || @capture(expr, varname_ = vardefault_)
-				push!(specs, Expr(:kw, :name, QuoteNode(varname)))
-				push!(specs, Expr(:kw, :default, vardefault))
-				T = something(T, Float64)
-
-				# Store global information
-				push!(names, varname)
-				push!(types, T)
-				push!(default_values, vardefault)
-				continue
-			end
-		end
-
-		# Create function call
-		# The expression of function call looks something like
-		# (:call, :f, (:parameters, kw1, kw2, ...))
-		Expr(:call, :ParameterSpecs, Expr(:parameters, specs...))
-	end
-
-	# Make an array of parameter specs
-	specs_array_expr = Expr(:vcat, specs...)
-
-	# Make struct definition
-	params = zip(names, types, default_values)
-	fields_expr = map(params) do (name, T, value)
-        Expr(:(::), name, T)
-    end
-	struct_expr = let mutable = false
-	    structname = Expr(:(<:), struct_name, :(EbmCommon.AbstractEbmParams))
-	    expr = Expr(:struct, mutable, structname, Expr(:block, fields_expr...))
-	end	
-
-	# Make kwdef constructur expr
-	# struct_path = Expr(:(.), CurrentModule, QuoteNode(struct_name))
-	struct_path = struct_name
-	constructor_expr = let
-		kws = map(params) do (name, T, value)
-			Expr(:kw, name, value)
-		end
-		kwparams = Expr(:parameters, kws...)
-
-		fn_head = Expr(:call, struct_path, kwparams)
-		fn_body = Expr(:block, Expr(:call, struct_name, names...))
-		Expr(:(=), esc(fn_head), esc(fn_body))
-	end
-	specs_array_expr, struct_expr, constructor_expr, struct_name
-end
-
-function _model_specs(expr)
-    expr = Base.remove_linenums!(expr)
-    variables_expr = Ref{Expr}()
-    param_specs_expr = Ref{Expr}()
-    param_structs_expr = Ref{Expr}()
-    constructor_expr = Ref{Expr}()
-    struct_name = Ref{Symbol}()
-    _number_of_variables = Ref{Int}()
-    time_axis_name = :("Time")
-    state_axis_name = :("State")
-    for expr in expr.args
-        if @capture(expr, variables = variables_info_)
-            (
-                variables_expr[],
-                _number_of_variables[]
-            ) = _variable_specs(expr)
-        elseif @capture(expr, time_axis_name = time_axis_name_value_)
-            time_axis_name = time_axis_name_value
-        elseif @capture(expr, state_axis_name = state_axis_name_value_)
-            state_axis_name = state_axis_name_value
-        elseif @capture(expr, parameters = parameters_expr_)
-            a, b, c, d = _parameter_specs(expr)
-            param_specs_expr[] = a
-            param_structs_expr[] = b
-            constructor_expr[] = c
-            struct_name[] = d
+    # Print the parameters
+    # Breaks every i % 4 == 0
+    push!(print_exprs, :(print($io, "\t")))
+    n = length(specs.fields)
+    for (i, field) in enumerate(specs.fields)
+        field_name = field.name
+        field_value_expr = :($obj.$field_name)
+        field_type_expr = :(typeof($obj.$field_name))
+        string_expr = Expr(
+            :string,
+            "$field_name::",
+            field_type_expr,
+            " = ",
+            field_value_expr
+        )
+        print_expr = :(print($io, $string_expr))
+        push!(print_exprs, print_expr)
+        if i != n
+            push!(print_exprs, :(print($io, ",\n\t")))
         end
     end
 
-    # Model specification creation
-    model_specs_expr = Expr(:call, :(EbmCommon.ModelSpecs),
-        Expr(:parameters,
-            Expr(:kw, :variables, variables_expr[]),
-            Expr(:kw, :parameters, param_specs_expr[]),
-            Expr(:kw, :time_axis_name, time_axis_name),
-            Expr(:kw, :state_axis_name, state_axis_name)))
-
-    # Block of model specs + parameter type
-    # struct_path = Expr(:(.), CurrentModule, QuoteNode(struct_name[]))
-    struct_path = struct_name[]
-
-
-    # f(::MyType)
-    # f(::Type{MyType})
-    type_ex_1 = Expr(:(::), esc(struct_path))
-    type_ex_2 = Expr(:(::), esc(Expr(:curly, :Type, struct_path)))
-
-    # EbmCommon.get_model_specifications
-    get_model_specifications_expr = let
-        fn_path = Expr(:(.), :EbmCommon,
-                       QuoteNode(:get_model_specifications))
-        call_ex_1 = Expr(:call, fn_path, type_ex_1)
-        call_ex_2 = Expr(:call, fn_path, type_ex_2)
-        fn_ex_1 = Expr(:(=), call_ex_1, model_specs_expr)
-        fn_ex_2 = Expr(:(=), call_ex_2, model_specs_expr)
-        fn_ex_1, fn_ex_2
-    end
-
-    # EbmCommon.number_of_variables
-    number_of_variables_expr = let
-        fn_path = Expr(:(.), :EbmCommon,
-                       QuoteNode(:number_of_variables))
-        call_ex_1 = Expr(:call, fn_path, type_ex_1)
-        call_ex_2 = Expr(:call, fn_path, type_ex_2)
-        fn_ex_1 = Expr(:(=), call_ex_1, _number_of_variables[])
-        fn_ex_2 = Expr(:(=), call_ex_2, _number_of_variables[])
-        fn_ex_1, fn_ex_2
-    end
-
-    quote
-        $(param_structs_expr[])
-        $(constructor_expr[])
-        $(get_model_specifications_expr[1])
-        $(get_model_specifications_expr[2])
-        $(number_of_variables_expr[1])
-        $(number_of_variables_expr[2])
-    end
+    return :(
+        function Base.show($io::IO, $obj::$(esc(struct_name)))
+            $(print_exprs...)
+        end
+    )
 end
-
 
 """
-Quickly create a model using the below syntax.
+Generate a struct that holds parameters.
 
-- Auto create the parameter type (`PredatorPreyParams` in the example)
-- Auto implement `numner_of_variables` and `get_model_specifications`
-
-```julia
-@ebmspecs begin
-	time_axis_name = "time"
-	state_axis_name = "biomass"
-	variables = [
-		x::Float64 = 0.9 description = "preys" latexname = "x";
-		y::Float64 = 0.2 desc = "predators";
-	]
-	parameters = PredatorPreyParams[
-		α::Float64 = 1 description = "preys" latex = raw"\alpha";
-		β::Float64 = 1 description = "predators" latexname = raw"\beta";
-	]
-end
-```
+Each fields will be of parametric type.
 """
-macro ebmspecs(expr)
-    _model_specs(expr)
-end
-
+macro params(expr)
+    specs = parse_struct(expr)
+    struct_def = generate_struct(specs)
+    print_def = generate_print_override(specs)
+    return :($struct_def; $print_def)
 end

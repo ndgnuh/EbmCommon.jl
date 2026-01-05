@@ -23,6 +23,15 @@ export AbstractEbmParams
 export Bifurcation1d, PhasePortrait2d
 export simulate, update, check_routh_hurwitz, get_jacobian
 
+# TODO: make this less messy
+module MacroStuffs
+    include("macros.jl")
+    export @params
+end
+
+using .MacroStuffs: @params
+export @params
+
 include("utilities.jl")
 include("interface.jl")
 include("numerical/simulate.jl")
