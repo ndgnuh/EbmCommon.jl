@@ -103,7 +103,7 @@ Returns Vector of symbols for updating parameters.
 Useful for parameter aliases.
 """
 const NTuplesOfSymbols = NTuple{N, Symbol} where {N}
-function get_update_properties(::AbstractEbmParams, name::Symbol)::NTuplesOfSymbols
+function get_parameter_alias(::AbstractEbmParams, name::Symbol)::NTuplesOfSymbols
     return (name,)
 end
 
@@ -124,7 +124,7 @@ function update(
         update_callback = nothing
     )
     for (k, v) in updates
-        props = get_update_properties(params, k)
+        props = get_parameter_alias(params, k)
         for prop in props
             params = set(params, PropertyLens(prop), v)
         end
