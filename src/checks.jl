@@ -46,7 +46,7 @@ and the jacobian using derived formula at some random states
 to check if the formulation is correctly calculated and implemented
 """
 function test_jacobian(params::T; num_tests = 30) where {T <: AbstractEbmParams}
-    n = number_of_variables(T)
+    n = number_of_variables(params)
     for _ in 1:num_tests
         u0 = rand(n)
         J_machine = machine.jacobian(params, u0)

@@ -1,6 +1,6 @@
 name = "EbmCommon"
 uuid = "f104a7c3-3688-4e7c-9c13-313faccad043"
-version = "0.7.15"
+version = "0.7.16"
 authors = ["Hung Nguyen Duc <ndgnuh@protonmail.com>"]
 
 [workspace]
