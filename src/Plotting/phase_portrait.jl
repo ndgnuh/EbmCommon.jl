@@ -1,3 +1,29 @@
+@kwdef struct PhasePortraitPlotOptions{T}
+    data::PhasePortrait2d{T}
+    orbit_color = :black
+    orbit_alpha = 0.5
+    orbit_linewidth = 2.0
+    orbit_linestyle = :solid
+    show_start_marker::Bool = true
+    show_stop_marker::Bool = true
+    show_limit_cycle = false
+    marker_size = 10
+    start_marker_size = marker_size
+    start_marker_color = :blue
+    stop_marker_size = marker_size
+    stop_marker_color = :red
+    limit_cycle_linewidth = 2.0
+    limit_cycle_linestyle = :solid
+    limit_cycle_color = :red
+    limit_cycle_start::Real = 0.2
+    xindex = data.config.x_updates[1]
+    yindex = data.config.y_updates[1]
+    xlabel = get_latex_name(data.config.simulation_config.params, xindex)
+    ylabel = get_latex_name(data.config.simulation_config.params, yindex)
+    fig = Figure()
+    ax = Axis(fig[1, 1]; xlabel, ylabel)
+end
+
 """
 $TYPEDSIGNATURES
 
@@ -29,32 +55,32 @@ See also: `PhasePortrait2d`, `run_phase_portrait_2d`.
 """
 function plot_phase_portrait(
         data::PhasePortrait2d{T};
-        orbit_color = :black,
-        orbit_alpha = 0.5,
-        orbit_linewidth = 2.0,
-        orbit_linestyle = :solid,
-        show_start_marker::Bool = true,
-        show_stop_marker::Bool = true,
-        show_limit_cycle = false,
-        marker_size = 10,
-        start_marker_size = marker_size,
-        start_marker_color = :blue,
-        stop_marker_size = marker_size,
-        stop_marker_color = :red,
-        limit_cycle_linewidth = 2.0,
-        limit_cycle_linestyle = :solid,
-        limit_cycle_color = :red,
-        limit_cycle_start::Real = 0.2,
-        xindex = data.xchange[1],
-        yindex = data.ychange[1],
-        xlabel = get_latex_name(data.params, xindex),
-        ylabel = get_latex_name(data.params, yindex),
-        fig = Figure(),
-        ax = Axis(fig[1, 1]; xlabel, ylabel),
+        config::PhasePortraitPlotOptions = PhasePortraitPlotOptions(; data),
     ) where {T}
 
     # Unpack data
     solutions = data.solutions
+    @unpack (
+        fig,
+        ax,
+        xindex,
+        yindex,
+        orbit_color,
+        orbit_alpha,
+        orbit_linewidth,
+        orbit_linestyle,
+        show_start_marker,
+        show_stop_marker,
+        show_limit_cycle,
+        start_marker_size,
+        start_marker_color,
+        stop_marker_size,
+        stop_marker_color,
+        limit_cycle_linewidth,
+        limit_cycle_linestyle,
+        limit_cycle_color,
+        limit_cycle_start,
+    ) = config
 
     # Collect orbits' xs and ys
     xs = Vector{Float64}[]
@@ -152,12 +178,26 @@ The keyword options `kwargs...` are passed to `plot_phase_portrait`.
 
 See also: `run_phase_portrait_2d`, `plot_phase_portrait`.
 """
-function plot_phase_portrait(params::P; kwargs...) where {P <: AbstractEbmParams}
+function plot_phase_portrait(params::AbstractEbmParams; kwargs...)
+    simulation_config = construct_from_kwargs(
+        Ebm.SimulationConfig;
+        params = params,
+        kwargs...,
+    )
+
     config = construct_from_kwargs(
         Ebm.PhasePortrait2dConfig;
+        simulation_config,
         params = params,
         kwargs...
     )
+
     data = run_phase_portrait_2d(config)
-    return plot_phase_portrait(data; kwargs...)
+    config = construct_from_kwargs(
+        PhasePortraitPlotOptions;
+        data = data,
+        kwargs...,
+    )
+
+    return plot_phase_portrait(data, config)
 end

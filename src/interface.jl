@@ -137,6 +137,14 @@ function update(
     end
 end
 
+function update(
+        params::AbstractEbmParams;
+        update_callback = nothing,
+        kwargs...,
+    )
+    return update(params, kwargs...; update_callback = update_callback)
+end
+
 """
 Collect parameter to a dictionary of Symbol => T.
 

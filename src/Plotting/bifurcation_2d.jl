@@ -3,6 +3,8 @@
     colormap = Makie.wong_colors()
     xlabel::S1
     ylabel::S2
+    fig = Figure()
+    ax = Axis(fig[1, 1])
 end
 
 function StabilityDiagramOptions(
@@ -50,7 +52,7 @@ function plot_stability_diagram(
     ) = config
 
     # Mapping to categorical heatmap
-    flags = convert.(UInt8, stability_map)
+    flags = [encode_stability(se, bitvec) for bitvec in stability_map]
     cats = sort!(unique(flags))
     labels = [stability_flagname(se, flag) for flag in cats]
     colors = Makie.categorical_colors(colormap, length(cats))
@@ -89,7 +91,7 @@ function plot_stability_diagram(
     )
     # Run the bifurcation analysis
     config = construct_from_kwargs(
-        Ebm.Bifurcation2dConfig,
+        Ebm.Bifurcation2dConfig;
         params = base_params,
         x_updates = update_x,
         y_updates = update_y,

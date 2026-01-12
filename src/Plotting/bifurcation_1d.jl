@@ -66,7 +66,7 @@ function plot_bifurcation_1d(
         cutoff_at_the_end::Real = 0.2,
         baseline_color = :red,
         baseline_linewidth = 1,
-        markersize = 3,
+        markersize = 5,
     )
     # Unpack
     @unpack (updated_params, solutions, config, bifurcation_points) = data
@@ -76,8 +76,9 @@ function plot_bifurcation_1d(
     param_base_value = getproperty(base_params, param_name)
 
     # Transform simulation data to plotting data
-    xs = Float64[]
-    yss = Dict(i => Float64[] for i in output_indices)
+
+    ymaxs = Dict(i => Float64[] for i in output_indices)
+    ymins = Dict(i => Float64[] for i in output_indices)
     for (param_value, sol) in zip(param_values, solutions)
         # How many steps to cut off
         t = sol.t
@@ -87,13 +88,14 @@ function plot_bifurcation_1d(
             floor(Int, cutoff_at_the_end * length(t))
         end
 
-        # Pad the x values to even the cutoff length
-        append!(xs, fill(param_value, cutoff_step))
-
         # Collect the output values from cutoff point
         for i in output_indices
             y = get_compartment(sol.u, i)
-            append!(yss[i], y[(end - cutoff_step + 1):end])
+            ycutoff = @view y[(end - cutoff_step + 1):end]
+            ymax = maximum(ycutoff)
+            ymin = minimum(ycutoff)
+            push!(ymins[i], ymin)
+            push!(ymaxs[i], ymax)
         end
     end
 
@@ -103,14 +105,16 @@ function plot_bifurcation_1d(
 
     # Draw the fluctuations of output variables
     for i in output_indices
-        ys = yss[i]
+        ymins_i = ymins[i]
+        ymaxs_i = ymaxs[i]
         label = output_labels[i]
-        scatter!(ax, xs, ys; markersize = markersize, label = label)
+        xs = [param_values; param_values]
+        scatter!(ax, xs, [ymins_i; ymaxs_i]; markersize = markersize, label = label)
     end
 
     # Draw the baseline of parameter value
-    ymin = minimum(minimum(ys) for (_, ys) in yss)
-    ymax = maximum(maximum(ys) for (_, ys) in yss)
+    ymin = minimum(minimum(y) for y in values(ymins))
+    ymax = maximum(maximum(y) for y in values(ymaxs))
     for bp in bifurcation_points
         type = bp.type
         value = bp.param

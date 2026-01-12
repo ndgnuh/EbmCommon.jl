@@ -22,6 +22,34 @@ include("bifurcation_1d.jl")
 include("stability_encoding.jl")
 include("bifurcation_2d.jl")
 
+"""
+Plot compartments from a simulation result.
+"""
+function Makie.plot(result::SimulationResult; kwargs...)
+    return plot_compartments(result; kwargs...)
+end
+
+"""
+Plot phase portrait from a phase portrait result.
+"""
+function Makie.plot(result::PhasePortrait2d; kwargs...)
+    return plot_phase_portrait(result; kwargs...)
+end
+
+"""
+Plot bifurcation diagram from a bifurcation 1d result.
+"""
+function Makie.plot(result::Bifurcation1d; kwargs...)
+    return plot_bifurcation_1d(result; kwargs...)
+end
+
+"""
+Plot stability diagram from a bifurcation 2d result.
+"""
+function Makie.plot(result::Bifurcation2d; kwargs...)
+    return plot_stability_diagram(result; kwargs...)
+end
+
 export set_makie_theme!
 export plot_compartments
 export plot_phase_portrait
