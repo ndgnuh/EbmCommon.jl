@@ -28,6 +28,19 @@ $(SIGNATURES)
     bifurcation_points::Vector{T}
 end
 
+function Base.show(io::IO, br::Bifurcation1d)
+    name = first(br.config.param_updates)
+    values = last(br.config.param_updates)
+    pmin, pmax = minimum(values), maximum(values)
+    println(io, "Bifurcation1dResult:")
+    println(io, "\tparam: [$name] $pmin → $pmax")
+    for bp in br.bifurcation_points
+        lb, ub = bp.interval
+        println(io, "\t$(bp.type): $(bp.param) [$lb, $ub]")
+    end
+    return
+end
+
 """
 $(SIGNATURES)
 
@@ -52,14 +65,51 @@ function run_bifurcation_1d(config::Bifurcation1dConfig{T}) where {T}
 
     @assert param_min < param_base < param_max "Initial bifurcation parameter value $param_name = $param_base must be within bounds [$param_min, $param_max]."
 
+    # U0 is changed after the simulation
+    # So copying it and re-initialize every time
     # Run simulation for the final state
-    updated_params = map(param_values) do value
-        update(base_params, param_name => value; update_callback)
-    end
-    solutions::Vector{ODESolution} = map(updated_params) do params_
-        _simulate(params_, u0, tspan; solver, solver_options)
+    base_u0 = copy(u0)
+    updated_params = typeof(base_params)[]
+    solutions = ODESolution[]
+    callback = TerminateSteadyState(1.0e-4)
 
+    let n = length(param_values)
+        sizehint!(updated_params, n)
+        sizehint!(solutions, n)
     end
+    for value in param_values
+        # Update parameter
+        params = update(
+            base_params, param_name => value;
+            update_callback
+        )
+
+        # Get tspan and solver options based on the value
+        # of bifurcation parameter
+        tspan_ = tspan isa Function ? tspan(value) : tspan
+        solver_options_ = if solver_options isa Function
+            solver_options(value)
+        else
+            solver_options
+        end
+
+        # eayly stop when steady state reached
+        solver_options_ = merge(
+            solver_options_, (; callback = callback)
+        )
+
+        # Reset u0 and re-run simulation
+        u0 = copy(base_u0)
+        sol = _simulate(
+            params, u0, tspan;
+            solver, solver_options = solver_options_
+        )
+
+        # Store states
+        push!(updated_params, params)
+        push!(solutions)
+    end
+
 
     # Solve numerical bifurcation for branching points
     bp = BifurcationProblem(
