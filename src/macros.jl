@@ -323,8 +323,6 @@ Generate a struct that holds parameters.
 Each fields will be of parametric type.
 """
 macro params(expr)
-    println(__module__)
-
     specs = parse_struct(expr; __module__)
     struct_def = generate_struct(specs)
     print_def = generate_print_override(specs)

@@ -26,9 +26,8 @@ $TYPEDSIGNATURES
 Calculates and returns jacobian at a single state using forward diff.
 """
 function jacobian(params::T, u::AbstractVector, t = 0.0) where {T <: Ebm.AbstractEbmParams}
-    f!(du, x) = Ebm.evolve!(du, x, params, t)
-    du = ones(length(u))
-    return ReverseDiff.jacobian(f!, du, u)
+    f(u) = Ebm.evolve(u, params, t)
+    return ReverseDiff.jacobian(f, u)
 end
 
 """
